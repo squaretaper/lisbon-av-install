@@ -1,0 +1,1528 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "scripted-generator",
+  "elements": [
+    {
+      "type": "text",
+      "id": "e1",
+      "x": 300,
+      "y": 30,
+      "width": 702.0,
+      "height": 42.0,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "ESP32 LED Controller v6 \u2014 breadboard audit schematic",
+      "fontSize": 30,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "baseline": 30,
+      "containerId": null,
+      "originalText": "ESP32 LED Controller v6 \u2014 breadboard audit schematic",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "text",
+      "id": "e2",
+      "x": 310,
+      "y": 75,
+      "width": 656.1,
+      "height": 25.2,
+      "angle": 0,
+      "strokeColor": "#334155",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "High-current 12 V off breadboard. USB-derived 5 V logic only. Common ground only.",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "baseline": 18,
+      "containerId": null,
+      "originalText": "High-current 12 V off breadboard. USB-derived 5 V logic only. Common ground only.",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e3",
+      "x": 70,
+      "y": 150,
+      "width": 230,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#b91c1c",
+      "backgroundColor": "#fee2e2",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e4",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e4",
+      "x": 78,
+      "y": 160,
+      "width": 214,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "PSU\nRS-150-12\n12V / 12.5A",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e3",
+      "originalText": "PSU\nRS-150-12\n12V / 12.5A",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e5",
+      "x": 70,
+      "y": 260,
+      "width": 230,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#c2410c",
+      "backgroundColor": "#ffedd5",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e6",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e6",
+      "x": 78,
+      "y": 270,
+      "width": 214,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "F1\n7.5A source fuse",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e5",
+      "originalText": "F1\n7.5A source fuse",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e7",
+      "x": 55,
+      "y": 370,
+      "width": 260,
+      "height": 90,
+      "angle": 0,
+      "strokeColor": "#a16207",
+      "backgroundColor": "#fef9c3",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e8",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e8",
+      "x": 63,
+      "y": 380,
+      "width": 244,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "RP1 reverse-polarity\nMOSFET ideal diode or\nhigh-current rated diode\nNOT 1N5822 full-current",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e7",
+      "originalText": "RP1 reverse-polarity\nMOSFET ideal diode or\nhigh-current rated diode\nNOT 1N5822 full-current",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e9",
+      "x": 70,
+      "y": 520,
+      "width": 230,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#b91c1c",
+      "backgroundColor": "#fee2e2",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e10",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e10",
+      "x": 78,
+      "y": 530,
+      "width": 214,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "P12_PROTECTED\n12 V LED rail",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e9",
+      "originalText": "P12_PROTECTED\n12 V LED rail",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e11",
+      "x": 70,
+      "y": 660,
+      "width": 230,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#15803d",
+      "backgroundColor": "#dcfce7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e12",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e12",
+      "x": 78,
+      "y": 670,
+      "width": 214,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "J1\nV+ / GND / DATA",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e11",
+      "originalText": "J1\nV+ / GND / DATA",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e13",
+      "x": 70,
+      "y": 790,
+      "width": 230,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#15803d",
+      "backgroundColor": "#dcfce7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e14",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e14",
+      "x": 78,
+      "y": 800,
+      "width": 214,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "J2\nV+ / GND / DATA",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e13",
+      "originalText": "J2\nV+ / GND / DATA",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e15",
+      "x": 380,
+      "y": 535,
+      "width": 220,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#a16207",
+      "backgroundColor": "#fef3c7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e16",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e16",
+      "x": 388,
+      "y": 545,
+      "width": 204,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "C1\n1000\u00b5F / 25V",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e15",
+      "originalText": "C1\n1000\u00b5F / 25V",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e17",
+      "x": 380,
+      "y": 650,
+      "width": 220,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#15803d",
+      "backgroundColor": "#dcfce7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e18",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e18",
+      "x": 388,
+      "y": 660,
+      "width": 204,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "LED2 + R4\ngreen + 1k",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e17",
+      "originalText": "LED2 + R4\ngreen + 1k",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e19",
+      "x": 380,
+      "y": 790,
+      "width": 220,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#475569",
+      "backgroundColor": "#e2e8f0",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e20",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e20",
+      "x": 388,
+      "y": 800,
+      "width": 204,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "POWER_GND_BUS\ncommon ground",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e19",
+      "originalText": "POWER_GND_BUS\ncommon ground",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "line",
+      "id": "e21",
+      "x": 185,
+      "y": 220,
+      "width": 0,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e22",
+      "x": 185,
+      "y": 320,
+      "width": 0,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          50
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e23",
+      "x": 185,
+      "y": 460,
+      "width": 0,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          60
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e24",
+      "x": 300,
+      "y": 550,
+      "width": 80,
+      "height": 15,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          80,
+          15
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e25",
+      "x": 185,
+      "y": 580,
+      "width": 0,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          80
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e26",
+      "x": 185,
+      "y": 580,
+      "width": 0,
+      "height": 210,
+      "angle": 0,
+      "strokeColor": "#dc2626",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          210
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e27",
+      "x": 185,
+      "y": 730,
+      "width": 195,
+      "height": 95,
+      "angle": 0,
+      "strokeColor": "#334155",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          95
+        ],
+        [
+          195,
+          95
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e28",
+      "x": 490,
+      "y": 710,
+      "width": 0,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#334155",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          80
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "text",
+      "id": "e29",
+      "x": 55,
+      "y": 910,
+      "width": 504.0,
+      "height": 28.0,
+      "angle": 0,
+      "strokeColor": "#b91c1c",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "NO full LED current through solderless breadboard rails.",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "baseline": 20,
+      "containerId": null,
+      "originalText": "NO full LED current through solderless breadboard rails.",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e30",
+      "x": 810,
+      "y": 150,
+      "width": 250,
+      "height": 90,
+      "angle": 0,
+      "strokeColor": "#1d4ed8",
+      "backgroundColor": "#dbeafe",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e31",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e31",
+      "x": 818,
+      "y": 160,
+      "width": 234,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "ESP32 DevKit V1\nUSB-C powered only\nVIN = 5V_FROM_USB",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e30",
+      "originalText": "ESP32 DevKit V1\nUSB-C powered only\nVIN = 5V_FROM_USB",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e32",
+      "x": 800,
+      "y": 350,
+      "width": 300,
+      "height": 220,
+      "angle": 0,
+      "strokeColor": "#6d28d9",
+      "backgroundColor": "#ddd6fe",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e33",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e33",
+      "x": 808,
+      "y": 360,
+      "width": 284,
+      "height": 200,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "U1 SN74AHCT125N\n1/4 OE used LOW\n10/13 OE unused HIGH\n9/12 inputs GND\n8/11 outputs NC\n14 VCC=5V, 7 GND",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e32",
+      "originalText": "U1 SN74AHCT125N\n1/4 OE used LOW\n10/13 OE unused HIGH\n9/12 inputs GND\n8/11 outputs NC\n14 VCC=5V, 7 GND",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e34",
+      "x": 1160,
+      "y": 385,
+      "width": 210,
+      "height": 70,
+      "angle": 0,
+      "strokeColor": "#a16207",
+      "backgroundColor": "#fef3c7",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e35",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e35",
+      "x": 1168,
+      "y": 395,
+      "width": 194,
+      "height": 50,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "C2 0.1\u00b5F + C3 10\u00b5F\nVCC to GND",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e34",
+      "originalText": "C2 0.1\u00b5F + C3 10\u00b5F\nVCC to GND",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e36",
+      "x": 1180,
+      "y": 540,
+      "width": 170,
+      "height": 55,
+      "angle": 0,
+      "strokeColor": "#c2410c",
+      "backgroundColor": "#fed7aa",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e37",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e37",
+      "x": 1188,
+      "y": 550,
+      "width": 154,
+      "height": 35,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "R1 470\u03a9",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e36",
+      "originalText": "R1 470\u03a9",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e38",
+      "x": 1180,
+      "y": 635,
+      "width": 170,
+      "height": 55,
+      "angle": 0,
+      "strokeColor": "#c2410c",
+      "backgroundColor": "#fed7aa",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e39",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e39",
+      "x": 1188,
+      "y": 645,
+      "width": 154,
+      "height": 35,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "R2 470\u03a9",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e38",
+      "originalText": "R2 470\u03a9",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e40",
+      "x": 1145,
+      "y": 180,
+      "width": 230,
+      "height": 75,
+      "angle": 0,
+      "strokeColor": "#b91c1c",
+      "backgroundColor": "#fecaca",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e41",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e41",
+      "x": 1153,
+      "y": 190,
+      "width": 214,
+      "height": 55,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "LED1 + R3\nGPIO27 status\n220\u03a9 red LED",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e40",
+      "originalText": "LED1 + R3\nGPIO27 status\n220\u03a9 red LED",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e42",
+      "x": 825,
+      "y": 730,
+      "width": 230,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#1d4ed8",
+      "backgroundColor": "#dbeafe",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e43",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e43",
+      "x": 833,
+      "y": 740,
+      "width": 214,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "P5_LOGIC_USB\nfrom ESP32 VIN",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e42",
+      "originalText": "P5_LOGIC_USB\nfrom ESP32 VIN",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "rectangle",
+      "id": "e44",
+      "x": 1160,
+      "y": 780,
+      "width": 220,
+      "height": 60,
+      "angle": 0,
+      "strokeColor": "#475569",
+      "backgroundColor": "#e2e8f0",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "e45",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "e45",
+      "x": 1168,
+      "y": 790,
+      "width": 204,
+      "height": 40,
+      "angle": 0,
+      "strokeColor": "#111111",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "LOGIC GND\nto common GND",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "baseline": 18,
+      "containerId": "e44",
+      "originalText": "LOGIC GND\nto common GND",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "line",
+      "id": "e46",
+      "x": 935,
+      "y": 240,
+      "width": 0,
+      "height": 110,
+      "angle": 0,
+      "strokeColor": "#2563eb",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 3,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          110
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e47",
+      "x": 940,
+      "y": 730,
+      "width": 0,
+      "height": 160,
+      "angle": 0,
+      "strokeColor": "#2563eb",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 3,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          -160
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e48",
+      "x": 1100,
+      "y": 440,
+      "width": 60,
+      "height": 20,
+      "angle": 0,
+      "strokeColor": "#2563eb",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 3,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          -20
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e49",
+      "x": 1100,
+      "y": 490,
+      "width": 80,
+      "height": 78,
+      "angle": 0,
+      "strokeColor": "#f97316",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          80,
+          78
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e50",
+      "x": 1100,
+      "y": 525,
+      "width": 80,
+      "height": 137,
+      "angle": 0,
+      "strokeColor": "#f97316",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          80,
+          137
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e51",
+      "x": 1350,
+      "y": 568,
+      "width": 1110,
+      "height": 127,
+      "angle": 0,
+      "strokeColor": "#f97316",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ],
+        [
+          60,
+          127
+        ],
+        [
+          -1050,
+          127
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e52",
+      "x": 1350,
+      "y": 662,
+      "width": 1140,
+      "height": 163,
+      "angle": 0,
+      "strokeColor": "#f97316",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          90,
+          0
+        ],
+        [
+          90,
+          163
+        ],
+        [
+          -1050,
+          163
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "line",
+      "id": "e53",
+      "x": 1270,
+      "y": 780,
+      "width": 670,
+      "height": 80,
+      "angle": 0,
+      "strokeColor": "#334155",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 4,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          80
+        ],
+        [
+          -670,
+          45
+        ]
+      ],
+      "startBinding": null,
+      "endBinding": null,
+      "lastCommittedPoint": null,
+      "startArrowhead": null,
+      "endArrowhead": null
+    },
+    {
+      "type": "text",
+      "id": "e54",
+      "x": 695,
+      "y": 900,
+      "width": 540.0,
+      "height": 28.0,
+      "angle": 0,
+      "strokeColor": "#334155",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "Meter checks: P12\u2194P5 open; U1 pin3\u2194pin6 open; data\u219412V open.",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "baseline": 20,
+      "containerId": null,
+      "originalText": "Meter checks: P12\u2194P5 open; U1 pin3\u2194pin6 open; data\u219412V open.",
+      "autoResize": true,
+      "lineHeight": 1.25
+    },
+    {
+      "type": "text",
+      "id": "e55",
+      "x": 700,
+      "y": 950,
+      "width": 259.2,
+      "height": 33.599999999999994,
+      "angle": 0,
+      "strokeColor": "#a16207",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "text": "Only shared node is GND.",
+      "fontSize": 24,
+      "fontFamily": 1,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "baseline": 24,
+      "containerId": null,
+      "originalText": "Only shared node is GND.",
+      "autoResize": true,
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}

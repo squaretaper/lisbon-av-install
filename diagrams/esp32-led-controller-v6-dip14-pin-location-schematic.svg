@@ -1,0 +1,327 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3300" height="2350" viewBox="0 0 3300 2350">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#111111"/></marker></defs>
+<text x="90" y="70" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" text-anchor="start" dominant-baseline="auto">ESP32 LED Controller v6 — DIP-14 Pin-Location Schematic</text>
+<text x="90" y="118" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" text-anchor="start" dominant-baseline="auto">U1 shown as actual 74AHCT125N DIP-14 top view: notch up, pins 1–7 left side, pins 14–8 right side.</text>
+<text x="90" y="155" fill="#9b1c1c" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" text-anchor="start" dominant-baseline="auto">This is the bench-wiring view: every IC pin location and net is explicit.</text>
+<line x1="80" y1="185" x2="3220" y2="185" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none"/>
+<text x="100" y="245" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" text-anchor="start" dominant-baseline="auto">Power / rails</text>
+<rect x="120" y="295" width="280" height="144" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="260" y="273" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="auto">J3 12V IN</text>
+<line x1="46" y1="323" x2="120" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="144" cy="323" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="170" y="330" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">1  +12V</text>
+<line x1="46" y1="411" x2="120" y2="411" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="144" cy="411" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="170" y="418" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">2  GND</text>
+<line x1="326" y1="323" x2="410" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="410" y1="323" x2="445" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<rect x="445" y="293" width="180" height="60" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<polyline points="465,323 505,305 545,341 585,323" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="625" y1="323" x2="660" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="535.0" y="271" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="middle" dominant-baseline="auto">F1</text>
+<text x="535.0" y="385" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="auto">7.5A off-board</text>
+<line x1="700" y1="323" x2="773.0" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="773.0,285 773.0,361 835.0,323" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<line x1="842.0" y1="277" x2="842.0" y2="369" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="842.0" y1="277" x2="859.0" y2="293" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="842.0" y1="369" x2="825.0" y2="353" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="842.0" y1="323" x2="930" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="815.0" y="261" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="middle" dominant-baseline="auto">D1/RP1</text>
+<text x="815.0" y="401" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="auto">1N5822 proto only</text>
+<line x1="930" y1="323" x2="1240" y2="323" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="1240,323 1260,304.0 1470,304.0 1470,342.0 1260,342.0" fill="#ffffff" stroke="#9b1c1c" stroke-width="3"/>
+<text x="1270" y="330" fill="#9b1c1c" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+12V_PROTECTED</text>
+<line x1="326" y1="411" x2="1240" y2="411" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="1240,411 1260,392.0 1414,392.0 1414,430.0 1260,430.0" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="1270" y="418" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">GND_COMMON</text>
+<circle cx="326" cy="323" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<circle cx="326" cy="411" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<line x1="1070" y1="323" x2="1070" y2="650" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1070" y1="650" x2="1070" y2="703.5" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1028" y1="703.5" x2="1112" y2="703.5" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="1028" y1="771.5" x2="1112" y2="771.5" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="1070" y1="771.5" x2="1070" y2="825" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="1122" y="693.5" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" text-anchor="start" dominant-baseline="auto">+</text>
+<text x="1134" y="727.5" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="middle">C1</text>
+<text x="1134" y="759.5" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">1000µF/25V</text>
+<line x1="1070" y1="825" x2="1070" y2="843" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1038" y1="843" x2="1102" y2="843" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1048" y1="856" x2="1092" y2="856" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1059" y1="869" x2="1081" y2="869" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1195" y1="323" x2="1195" y2="660" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1195" y1="660" x2="1195" y2="690" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1195" y1="775" x2="1195" y2="805" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polyline points="1195,690 1175,697.0833333333334 1215,704.1666666666666 1175,711.25 1215,718.3333333333334 1175,725.4166666666666 1215,732.5 1175,739.5833333333334 1215,746.6666666666666 1175,753.75 1215,760.8333333333334 1175,767.9166666666666 1195,775" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<text x="1245" y="718.5" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="middle">R4</text>
+<text x="1245" y="750.5" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">1k</text>
+<line x1="1195" y1="805" x2="1195" y2="830" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="1161,830 1229,830 1195,895" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<line x1="1155" y1="901" x2="1235" y2="901" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="1243" y1="840" x2="1283" y2="805" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none" marker-end="url(#arrow)"/>
+<line x1="1255" y1="871" x2="1295" y2="835" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none" marker-end="url(#arrow)"/>
+<text x="1259" y="875" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="middle">LED2 green</text>
+<line x1="1195" y1="901" x2="1195" y2="860" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1195" y1="860" x2="1195" y2="878" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1163" y1="878" x2="1227" y2="878" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1173" y1="891" x2="1217" y2="891" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1184" y1="904" x2="1206" y2="904" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<rect x="130" y="760" width="430" height="510" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="345" y="802" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" text-anchor="middle" dominant-baseline="auto">ESP32 DevKit V1</text>
+<text x="345" y="838" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="400" text-anchor="middle" dominant-baseline="auto">USB-C powered only</text>
+<text x="360" y="907" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">VIN/5V</text>
+<line x1="560" y1="900" x2="650" y2="900" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="560" cy="900" r="6" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="360" y="987" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GND</text>
+<line x1="560" y1="980" x2="650" y2="980" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="560" cy="980" r="6" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="360" y="1082" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GPIO25</text>
+<line x1="560" y1="1075" x2="650" y2="1075" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="560" cy="1075" r="6" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="360" y="1157" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GPIO26</text>
+<line x1="560" y1="1150" x2="650" y2="1150" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="560" cy="1150" r="6" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="360" y="1232" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GPIO27</text>
+<line x1="560" y1="1225" x2="650" y2="1225" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="560" cy="1225" r="6" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<polygon points="660,900 680,881.0 820,881.0 820,919.0 680,919.0" fill="#ffffff" stroke="#0f4c81" stroke-width="3"/>
+<text x="690" y="907" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<text x="670" y="948" fill="#9b1c1c" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">from USB/VIN only — do not backfeed</text>
+<line x1="660" y1="980" x2="660" y2="998" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="628" y1="998" x2="692" y2="998" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="638" y1="1011" x2="682" y2="1011" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="649" y1="1024" x2="671" y2="1024" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="704" y="1016" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">GND_COMMON</text>
+<rect x="1250" y="720" width="790" height="980" fill="#ffffff" stroke="#111111" stroke-width="5"/>
+<path d="M 1575.0 720 A 70 70 0 0 0 1715.0 720" fill="none" stroke="#111111" stroke-width="4"/>
+<text x="1645.0" y="812" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700" text-anchor="middle" dominant-baseline="auto">U1  SN74AHCT125N</text>
+<text x="1645.0" y="852" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="400" text-anchor="middle" dominant-baseline="auto">DIP-14 top view / notch up</text>
+<line x1="1145" y1="895" x2="1250" y2="895" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="895" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="885" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">1</text>
+<text x="1318" y="902" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">/OE1</text>
+<text x="1420" y="902" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">enable ch1</text>
+<text x="1120" y="902" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">GND</text>
+<line x1="1145" y1="1011" x2="1250" y2="1011" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1011" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1001" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">2</text>
+<text x="1318" y="1018" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">1A</text>
+<text x="1420" y="1018" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">from ESP32</text>
+<text x="1120" y="1018" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">GPIO25</text>
+<line x1="1145" y1="1127" x2="1250" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1127" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1117" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">3</text>
+<text x="1318" y="1134" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">1Y</text>
+<text x="1420" y="1134" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">output ch1</text>
+<text x="1120" y="1134" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">R1 → J1_DATA</text>
+<line x1="1145" y1="1243" x2="1250" y2="1243" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1243" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1233" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">4</text>
+<text x="1318" y="1250" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">/OE2</text>
+<text x="1420" y="1250" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">enable ch2</text>
+<text x="1120" y="1250" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">GND</text>
+<line x1="1145" y1="1359" x2="1250" y2="1359" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1359" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1349" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">5</text>
+<text x="1318" y="1366" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">2A</text>
+<text x="1420" y="1366" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">from ESP32</text>
+<text x="1120" y="1366" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">GPIO26</text>
+<line x1="1145" y1="1475" x2="1250" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1475" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1465" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">6</text>
+<text x="1318" y="1482" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">2Y</text>
+<text x="1420" y="1482" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">output ch2</text>
+<text x="1120" y="1482" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">R2 → J2_DATA</text>
+<line x1="1145" y1="1591" x2="1250" y2="1591" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1250" cy="1591" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="1278" y="1581" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="auto">7</text>
+<text x="1318" y="1598" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">GND</text>
+<text x="1420" y="1598" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="auto">logic ground</text>
+<text x="1120" y="1598" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end" dominant-baseline="auto">GND_COMMON</text>
+<line x1="2040" y1="895" x2="2145" y2="895" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="895" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="885" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">14</text>
+<text x="1895" y="902" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">VCC</text>
+<text x="1690" y="902" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">U1 supply</text>
+<text x="2170" y="902" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2040" y1="1011" x2="2145" y2="1011" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1011" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1001" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">13</text>
+<text x="1895" y="1018" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">/OE4</text>
+<text x="1690" y="1018" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">disable ch4</text>
+<text x="2170" y="1018" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2040" y1="1127" x2="2145" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1127" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1117" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">12</text>
+<text x="1895" y="1134" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">4A</text>
+<text x="1690" y="1134" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">unused input low</text>
+<text x="2170" y="1134" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GND</text>
+<line x1="2040" y1="1243" x2="2145" y2="1243" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1243" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1233" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">11</text>
+<text x="1895" y="1250" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">4Y</text>
+<text x="1690" y="1250" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">unused output</text>
+<text x="2170" y="1250" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">NC</text>
+<line x1="2040" y1="1359" x2="2145" y2="1359" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1359" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1349" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">10</text>
+<text x="1895" y="1366" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">/OE3</text>
+<text x="1690" y="1366" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">disable ch3</text>
+<text x="2170" y="1366" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2040" y1="1475" x2="2145" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1475" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1465" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">9</text>
+<text x="1895" y="1482" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">3A</text>
+<text x="1690" y="1482" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">unused input low</text>
+<text x="2170" y="1482" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">GND</text>
+<line x1="2040" y1="1591" x2="2145" y2="1591" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2040" cy="1591" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2012" y="1581" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="end" dominant-baseline="auto">8</text>
+<text x="1895" y="1598" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="end" dominant-baseline="auto">3Y</text>
+<text x="1690" y="1598" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">unused output</text>
+<text x="2170" y="1598" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">NC</text>
+<polyline points="650,1075 840,1075 840,1011 1145,1011" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<polyline points="650,1150 795,1150 795,1359 1145,1359" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<polyline points="650,1225 650,1225 650,1500" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="650" y1="1500" x2="650" y2="1530" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="650" y1="1615" x2="650" y2="1645" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polyline points="650,1530 630,1537.0833333333333 670,1544.1666666666667 630,1551.25 670,1558.3333333333333 630,1565.4166666666667 670,1572.5 630,1579.5833333333333 670,1586.6666666666667 630,1593.75 670,1600.8333333333333 630,1607.9166666666667 650,1615" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<text x="700" y="1558.5" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="middle">R3</text>
+<text x="700" y="1590.5" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">220Ω</text>
+<line x1="650" y1="1645" x2="650" y2="1670" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="616,1670 684,1670 650,1735" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<line x1="610" y1="1741" x2="690" y2="1741" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<text x="720" y="1715" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" text-anchor="start" dominant-baseline="middle">LED1 red status</text>
+<line x1="650" y1="1741" x2="650" y2="1830" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="650" y1="1830" x2="650" y2="1848" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="618" y1="1848" x2="682" y2="1848" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="628" y1="1861" x2="672" y2="1861" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="639" y1="1874" x2="661" y2="1874" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1145" y1="895" x2="1035" y2="895" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1035" y1="895" x2="1035" y2="913" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1003" y1="913" x2="1067" y2="913" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1013" y1="926" x2="1057" y2="926" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1024" y1="939" x2="1046" y2="939" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="1079" y="931" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">GND</text>
+<line x1="1145" y1="1243" x2="1035" y2="1243" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1035" y1="1243" x2="1035" y2="1261" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1003" y1="1261" x2="1067" y2="1261" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1013" y1="1274" x2="1057" y2="1274" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1024" y1="1287" x2="1046" y2="1287" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1145" y1="1591" x2="1035" y2="1591" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1035" y1="1591" x2="1035" y2="1609" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1003" y1="1609" x2="1067" y2="1609" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1013" y1="1622" x2="1057" y2="1622" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1024" y1="1635" x2="1046" y2="1635" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2145" y1="895" x2="2215" y2="895" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="2215,895 2235,876.0 2375,876.0 2375,914.0 2235,914.0" fill="#ffffff" stroke="#0f4c81" stroke-width="3"/>
+<text x="2245" y="902" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2145" y1="1011" x2="2215" y2="1011" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="2215,1011 2235,992.0 2375,992.0 2375,1030.0 2235,1030.0" fill="#ffffff" stroke="#0f4c81" stroke-width="3"/>
+<text x="2245" y="1018" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2145" y1="1359" x2="2215" y2="1359" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="2215,1359 2235,1340.0 2375,1340.0 2375,1378.0 2235,1378.0" fill="#ffffff" stroke="#0f4c81" stroke-width="3"/>
+<text x="2245" y="1366" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2145" y1="1127" x2="2215" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2215" y1="1127" x2="2215" y2="1145" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2183" y1="1145" x2="2247" y2="1145" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1158" x2="2237" y2="1158" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2204" y1="1171" x2="2226" y2="1171" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2145" y1="1475" x2="2215" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2215" y1="1475" x2="2215" y2="1493" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2183" y1="1493" x2="2247" y2="1493" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1506" x2="2237" y2="1506" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2204" y1="1519" x2="2226" y2="1519" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2145" y1="1243" x2="2185" y2="1243" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1227" x2="2225" y2="1259" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1259" x2="2225" y2="1227" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none"/>
+<text x="2237" y="1250" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">NC</text>
+<line x1="2145" y1="1591" x2="2185" y2="1591" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1575" x2="2225" y2="1607" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none"/>
+<line x1="2193" y1="1607" x2="2225" y2="1575" stroke="#111111" stroke-width="3" stroke-linecap="round" fill="none"/>
+<text x="2237" y="1598" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">NC</text>
+<line x1="795" y1="1127" x2="830" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1080" y1="1127" x2="1115" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polyline points="830,1127 850.8333333333334,1105 871.6666666666666,1149 892.5,1105 913.3333333333334,1149 934.1666666666666,1105 955.0,1149 975.8333333333333,1105 996.6666666666666,1149 1017.5,1105 1038.3333333333333,1149 1059.1666666666667,1105 1080,1127" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<text x="955.0" y="1083" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="middle" dominant-baseline="auto">R1</text>
+<text x="955.0" y="1185" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="auto">470Ω</text>
+<line x1="1115" y1="1127" x2="1145" y2="1127" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="795,1127 775,1108.0 645,1108.0 645,1146.0 775,1146.0" fill="#ffffff" stroke="#0b6b3a" stroke-width="3"/>
+<text x="655" y="1134" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">J1_DATA</text>
+<line x1="795" y1="1475" x2="830" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1080" y1="1475" x2="1115" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polyline points="830,1475 850.8333333333334,1453 871.6666666666666,1497 892.5,1453 913.3333333333334,1497 934.1666666666666,1453 955.0,1497 975.8333333333333,1453 996.6666666666666,1497 1017.5,1453 1038.3333333333333,1497 1059.1666666666667,1453 1080,1475" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<text x="955.0" y="1431" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="middle" dominant-baseline="auto">R2</text>
+<text x="955.0" y="1533" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="middle" dominant-baseline="auto">470Ω</text>
+<line x1="1115" y1="1475" x2="1145" y2="1475" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="795,1475 775,1456.0 645,1456.0 645,1494.0 775,1494.0" fill="#ffffff" stroke="#0b6b3a" stroke-width="3"/>
+<text x="655" y="1482" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">J2_DATA</text>
+<text x="2270" y="735" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">Decoupling at U1 pins 14/7</text>
+<polygon points="2300,790 2320,771.0 2460,771.0 2460,809.0 2320,809.0" fill="#ffffff" stroke="#0f4c81" stroke-width="3"/>
+<text x="2330" y="797" fill="#0f4c81" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">+5V_LOGIC</text>
+<line x1="2300" y1="790" x2="2300" y2="970" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2420" y1="790" x2="2420" y2="846.0" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2378" y1="846.0" x2="2462" y2="846.0" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="2378" y1="914.0" x2="2462" y2="914.0" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="2420" y1="914.0" x2="2420" y2="970" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="2484" y="870.0" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="middle">C2</text>
+<text x="2484" y="902.0" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">0.1µF</text>
+<line x1="2580" y1="790" x2="2580" y2="846.0" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2538" y1="846.0" x2="2622" y2="846.0" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="2538" y1="914.0" x2="2622" y2="914.0" stroke="#111111" stroke-width="5" stroke-linecap="round" fill="none"/>
+<line x1="2580" y1="914.0" x2="2580" y2="970" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="2644" y="870.0" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="middle">C3</text>
+<text x="2644" y="902.0" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="start" dominant-baseline="middle">10µF</text>
+<line x1="2300" y1="970" x2="2300" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2268" y1="988" x2="2332" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2278" y1="1001" x2="2322" y2="1001" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2289" y1="1014" x2="2311" y2="1014" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2420" y1="970" x2="2420" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2388" y1="988" x2="2452" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2398" y1="1001" x2="2442" y2="1001" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2409" y1="1014" x2="2431" y2="1014" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2580" y1="970" x2="2580" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2548" y1="988" x2="2612" y2="988" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2558" y1="1001" x2="2602" y2="1001" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="2569" y1="1014" x2="2591" y2="1014" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<rect x="2800" y="1410" width="280" height="200" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2940" y="1388" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="auto">J1 LED OUT</text>
+<line x1="2726" y1="1438" x2="2800" y2="1438" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1438" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1445" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">1  V+</text>
+<line x1="2726" y1="1510" x2="2800" y2="1510" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1510" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1517" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">2  GND</text>
+<line x1="2726" y1="1582" x2="2800" y2="1582" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1582" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1589" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">3  DATA</text>
+<rect x="2800" y="1765" width="280" height="200" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2940" y="1743" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="auto">J2 LED OUT</text>
+<line x1="2726" y1="1793" x2="2800" y2="1793" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1793" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1800" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">1  V+</text>
+<line x1="2726" y1="1865" x2="2800" y2="1865" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1865" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1872" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">2  GND</text>
+<line x1="2726" y1="1937" x2="2800" y2="1937" stroke="#111111" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="2824" cy="1937" r="7" fill="#ffffff" stroke="#111111" stroke-width="4"/>
+<text x="2850" y="1944" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="start" dominant-baseline="auto">3  DATA</text>
+<polyline points="2650,323 2650,1438 2726,1438" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="2650" cy="323" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<polyline points="2650,323 2650,1793 2726,1793" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="2650" cy="323" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<polyline points="2600,411 2600,1510 2726,1510" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="2600" cy="411" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<polyline points="2600,411 2600,1865 2726,1865" stroke="#111111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="2600" cy="411" r="8" fill="#111111" stroke="#111111" stroke-width="2"/>
+<polygon points="2726,1582 2706,1563.0 2576,1563.0 2576,1601.0 2706,1601.0" fill="#ffffff" stroke="#0b6b3a" stroke-width="3"/>
+<text x="2586" y="1589" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">J1_DATA</text>
+<polygon points="2726,1937 2706,1918.0 2576,1918.0 2576,1956.0 2706,1956.0" fill="#ffffff" stroke="#0b6b3a" stroke-width="3"/>
+<text x="2586" y="1944" fill="#0b6b3a" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="start" dominant-baseline="auto">J2_DATA</text>
+<rect x="80" y="2065" width="3140" height="200" fill="#ffffff" stroke="#111111" stroke-width="3"/>
+<text x="110" y="2105" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" text-anchor="start" dominant-baseline="auto">Must-meter checks before power</text>
+<text x="110" y="2145" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400" text-anchor="start" dominant-baseline="auto">1) +12V_PROTECTED ↔ +5V_LOGIC = open/megaohms.  2) All GND points common ≈0Ω.  3) U1 pins 10 and 13 are +5V_LOGIC, not GND.</text>
+<text x="110" y="2180" fill="#111111" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="400" text-anchor="start" dominant-baseline="auto">4) U1 pin 14 gets USB-derived +5V only; do not backfeed ESP32 VIN from the 12V supply.  5) Full LED current stays off solderless breadboard.</text>
+<text x="110" y="2215" fill="#9b1c1c" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" text-anchor="start" dominant-baseline="auto">Top-view DIP orientation matters: notch at top, pin 1 upper-left, pin 14 upper-right.</text>
+<text x="3210" y="2312" fill="#555555" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" text-anchor="end" dominant-baseline="auto">projects/lisbon-av-install • esp32-led-controller-v6-dip14-pin-location-schematic</text>
+</svg>

@@ -1,0 +1,318 @@
+ERC report (2026-05-20T23:23:03, Encoding UTF8)
+Report includes: Errors, Warnings
+
+***** Sheet /
+[footprint_link_issues]: The current configuration does not include the footprint library 'TerminalBlock'
+    ; warning
+    @(42.00 mm, 268.54 mm): Symbol J3 [CONN_2_RIGHT]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(42.00 mm, 268.54 mm): Symbol J3 [CONN_2_RIGHT]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(50.00 mm, 92.00 mm): Symbol U2 [ESP32_DEVKIT_V1_USB_ONLY]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(51.11 mm, 154.00 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(51.11 mm, 154.00 mm): Symbol R3 Pin 1 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.00 mm, 199.76 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.00 mm, 199.76 mm): Symbol U1P Pin 14 [VCC, Passive, Line]
+[footprint_link_issues]: The current configuration does not include the footprint library 'Package_DIP'
+    ; warning
+    @(55.00 mm, 215.00 mm): Symbol U1P [AHCT125_PWR]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(55.00 mm, 215.00 mm): Symbol U1P [AHCT125_PWR]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.00 mm, 230.24 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.97 mm, 266.00 mm): Symbol J3 Pin 1 [+, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.97 mm, 266.00 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(55.97 mm, 271.08 mm): Horizontal Wire, length 12.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(60.00 mm, 154.00 mm): Symbol R3 [R_US]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(68.89 mm, 154.00 mm): Horizontal Wire, length 24.22 mm
+[isolated_pin_label]: Label connected to only one pin
+    ; warning
+    @(71.11 mm, 266.00 mm): Label 'P12_PSU_PLUS'
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 76.76 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 76.76 mm): Symbol U2 Pin VIN [VIN/5V, Power output, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 84.38 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 92.00 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 99.62 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(75.40 mm, 109.78 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(83.11 mm, 266.00 mm): Symbol F1 Pin 1 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(83.11 mm, 266.00 mm): Horizontal Wire, length 12.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(92.00 mm, 266.00 mm): Symbol F1 [FUSE]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(93.11 mm, 154.00 mm): Symbol LED1 Pin 1 [A, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(100.89 mm, 266.00 mm): Horizontal Wire, length 12.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(102.00 mm, 154.00 mm): Symbol LED1 [LED]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(108.00 mm, 207.38 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(108.00 mm, 207.38 mm): Horizontal Wire, length 37.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(108.00 mm, 207.38 mm): Symbol C2 Pin 1 [Passive, Line]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(108.00 mm, 215.00 mm): Symbol C2 [C]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(108.00 mm, 222.62 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(108.00 mm, 222.62 mm): Horizontal Wire, length 37.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(110.89 mm, 154.00 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(129.68 mm, 78.08 mm): Horizontal Wire, length 17.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(129.68 mm, 116.08 mm): Horizontal Wire, length 17.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(134.76 mm, 266.00 mm): Symbol RP1 Pin 1 [IN, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(134.76 mm, 266.00 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(145.00 mm, 207.38 mm): Symbol C3 Pin 1 [Passive, Line]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(145.00 mm, 215.00 mm): Symbol C3 [C]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 62.84 mm): Vertical Wire, length 11.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 62.84 mm): Symbol U1A Pin 1 [~{OE1}, Passive, Inverted]
+[footprint_link_issues]: The current configuration does not include the footprint library 'Package_DIP'
+    ; warning
+    @(150.00 mm, 78.08 mm): Symbol U1A [AHCT125_CH1]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(150.00 mm, 78.08 mm): Symbol U1A [AHCT125_CH1]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 100.84 mm): Vertical Wire, length 11.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(150.00 mm, 100.84 mm): Symbol U1B Pin 4 [~{OE2}, Passive, Inverted]
+[footprint_link_issues]: The current configuration does not include the footprint library 'Package_DIP'
+    ; warning
+    @(150.00 mm, 116.08 mm): Symbol U1B [AHCT125_CH2]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(150.00 mm, 116.08 mm): Symbol U1B [AHCT125_CH2]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(150.00 mm, 266.00 mm): Symbol RP1 [REV_PROT]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(164.73 mm, 199.00 mm): Horizontal Wire, length 12.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(164.73 mm, 199.00 mm): Symbol TP2 Pin 1 [TP, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(165.24 mm, 266.00 mm): Horizontal Wire, length 15.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(166.00 mm, 199.00 mm): Symbol TP2 [TP]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(170.32 mm, 78.08 mm): Horizontal Wire, length 7.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(170.32 mm, 78.08 mm): Horizontal Wire, length 34.79 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(170.32 mm, 116.08 mm): Horizontal Wire, length 7.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(170.32 mm, 116.08 mm): Horizontal Wire, length 34.79 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(205.11 mm, 78.08 mm): Symbol R1 Pin 1 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(205.11 mm, 116.08 mm): Symbol R2 Pin 1 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(209.68 mm, 210.00 mm): Horizontal Wire, length 14.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(214.00 mm, 78.08 mm): Symbol R1 [R_US]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(214.00 mm, 116.08 mm): Symbol R2 [R_US]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(215.00 mm, 258.38 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(215.00 mm, 258.38 mm): Symbol C1 Pin 1 [+, Passive, Line]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(215.00 mm, 266.00 mm): Symbol C1 [C_POL]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(215.00 mm, 273.62 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(222.89 mm, 78.08 mm): Horizontal Wire, length 38.84 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(222.89 mm, 116.08 mm): Horizontal Wire, length 38.84 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(230.00 mm, 194.76 mm): Vertical Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(230.00 mm, 194.76 mm): Symbol U1C Pin 10 [~{OE3}, Passive, Inverted]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(230.00 mm, 210.00 mm): Symbol U1C [AHCT125_CH3]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(241.11 mm, 158.00 mm): Symbol R4 Pin 1 [Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(241.11 mm, 158.00 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(242.73 mm, 254.00 mm): Symbol TP1 Pin 1 [TP, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(242.73 mm, 254.00 mm): Horizontal Wire, length 13.00 mm
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(244.00 mm, 254.00 mm): Symbol TP1 [TP]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(250.00 mm, 158.00 mm): Symbol R4 [R_US]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(258.89 mm, 158.00 mm): Horizontal Wire, length 27.22 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(261.73 mm, 78.08 mm): Horizontal Wire, length 55.03 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(261.73 mm, 78.08 mm): Symbol TP3 Pin 1 [TP, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(261.73 mm, 116.08 mm): Horizontal Wire, length 55.03 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(261.73 mm, 116.08 mm): Symbol TP4 Pin 1 [TP, Passive, Line]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(263.00 mm, 78.08 mm): Symbol TP3 [TP]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(263.00 mm, 116.08 mm): Symbol TP4 [TP]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(284.68 mm, 210.00 mm): Horizontal Wire, length 14.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(286.11 mm, 158.00 mm): Symbol LED2 Pin 1 [A, Passive, Line]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(295.00 mm, 158.00 mm): Symbol LED2 [LED]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(303.89 mm, 158.00 mm): Horizontal Wire, length 14.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(305.00 mm, 194.76 mm): Vertical Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(305.00 mm, 194.76 mm): Symbol U1D Pin 13 [~{OE4}, Passive, Inverted]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(305.00 mm, 210.00 mm): Symbol U1D [AHCT125_CH4]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 67.92 mm): Symbol J1 Pin 1 [V+, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 67.92 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 73.00 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 105.92 mm): Symbol J2 Pin 1 [V+, Passive, Line]
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 105.92 mm): Horizontal Wire, length 13.00 mm
+[endpoint_off_grid]: Symbol pin or wire end off connection grid
+    ; warning
+    @(316.76 mm, 111.00 mm): Horizontal Wire, length 13.00 mm
+[footprint_link_issues]: The current configuration does not include the footprint library 'TerminalBlock'
+    ; warning
+    @(332.00 mm, 73.00 mm): Symbol J1 [CONN_3_LEFT]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(332.00 mm, 73.00 mm): Symbol J1 [CONN_3_LEFT]
+[footprint_link_issues]: The current configuration does not include the footprint library 'TerminalBlock'
+    ; warning
+    @(332.00 mm, 111.00 mm): Symbol J2 [CONN_3_LEFT]
+[lib_symbol_issues]: The current configuration does not include the symbol library 'RenStd'
+    ; warning
+    @(332.00 mm, 111.00 mm): Symbol J2 [CONN_3_LEFT]
+
+ ** ERC messages: 102  Errors 0  Warnings 102
+
+ ** Ignored checks:
+    - Global label only appears once in the schematic
+    - Four connection points are joined together
+    - SPICE model issue
+    - Assigned footprint doesn't match footprint filters

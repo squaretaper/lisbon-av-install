@@ -1,0 +1,156 @@
+{
+  "version": "v6-breadboard-audited",
+  "notes": [
+    "12 V LED power and USB-derived 5 V logic are separate rails. Only GND is common.",
+    "High LED current must stay off solderless breadboard rails. Use off-board fuse/protection/current bus.",
+    "1N5822 is not in the approved full-current path for the 7.5 A design.",
+    "AHCT outputs 1Y and 2Y are separate nets; never tie them together."
+  ],
+  "nets": {
+    "P12_IN_FUSED": [
+      "F1.output",
+      "J3.pin1_12V_IN",
+      "RP1.input"
+    ],
+    "P12_PROTECTED": [
+      "RP1.output",
+      "C1.plus",
+      "LED2_R4.top",
+      "J1.pin1_VPLUS",
+      "J2.pin1_VPLUS",
+      "TP1_12V_PROT"
+    ],
+    "P5_LOGIC_USB": [
+      "ESP32.VIN_5V_FROM_USB_DO_NOT_BACKFEED",
+      "U1.pin14_VCC",
+      "C2.plus",
+      "C3.plus",
+      "U1.pin10_OE3",
+      "U1.pin13_OE4",
+      "TP2_5V_LOGIC"
+    ],
+    "GND_COMMON": [
+      "PSU.minus",
+      "J3.pin2_GND",
+      "POWER_GND_BUS",
+      "BREADBOARD_GND_RAIL",
+      "ESP32.GND",
+      "U1.pin7_GND",
+      "C1.minus",
+      "C2.minus",
+      "C3.minus",
+      "LED1.cathode",
+      "LED2.cathode",
+      "J1.pin2_GND",
+      "J2.pin2_GND",
+      "U1.pin1_OE1",
+      "U1.pin4_OE2",
+      "U1.pin9_3A",
+      "U1.pin12_4A"
+    ],
+    "GPIO25_TO_U1_1A": [
+      "ESP32.GPIO25",
+      "U1.pin2_1A"
+    ],
+    "GPIO26_TO_U1_2A": [
+      "ESP32.GPIO26",
+      "U1.pin5_2A"
+    ],
+    "GPIO27_STATUS": [
+      "ESP32.GPIO27",
+      "R3.input"
+    ],
+    "STATUS_LED_SERIES": [
+      "R3.output",
+      "LED1.anode"
+    ],
+    "U1_1Y_TO_R1": [
+      "U1.pin3_1Y",
+      "R1.input"
+    ],
+    "J1_DATA": [
+      "R1.output",
+      "J1.pin3_DATA",
+      "TP3_J1_DATA"
+    ],
+    "U1_2Y_TO_R2": [
+      "U1.pin6_2Y",
+      "R2.input"
+    ],
+    "J2_DATA": [
+      "R2.output",
+      "J2.pin3_DATA",
+      "TP4_J2_DATA"
+    ],
+    "U1_UNUSED_OUTPUTS_NC": [
+      "U1.pin8_3Y_NC",
+      "U1.pin11_4Y_NC"
+    ]
+  },
+  "components": {
+    "PSU": {
+      "part": "Mean Well RS-150-12",
+      "role": "12 V 12.5 A LED PSU"
+    },
+    "F1": {
+      "part": "7.5 A blade fuse",
+      "role": "source-side DC fuse; must protect wiring and downstream protection block"
+    },
+    "RP1": {
+      "part": "P-channel MOSFET ideal-diode reverse protection OR high-current Schottky/rectifier module rated above fuse",
+      "role": "reverse polarity protection; replaces 1N5822 for full-current build"
+    },
+    "C1": {
+      "part": "1000 \u00b5F / 25 V electrolytic",
+      "role": "12 V bulk smoothing near LED power distribution"
+    },
+    "U1": {
+      "part": "SN74AHCT125N DIP-14 or equivalent AHCT/HCT buffer",
+      "role": "3.3 V ESP32 to 5 V WS2811 data level shifter"
+    },
+    "C2": {
+      "part": "0.1 \u00b5F ceramic",
+      "role": "AHCT125 high-frequency decoupling directly pins 14 to 7"
+    },
+    "C3": {
+      "part": "10 \u00b5F electrolytic/ceramic",
+      "role": "local 5 V logic reservoir"
+    },
+    "R1": {
+      "part": "470 \u03a9",
+      "role": "J1 data series resistor"
+    },
+    "R2": {
+      "part": "470 \u03a9",
+      "role": "J2 data series resistor"
+    },
+    "R3": {
+      "part": "220 \u03a9",
+      "role": "ESP32 status LED resistor"
+    },
+    "LED1": {
+      "part": "red LED",
+      "role": "GPIO27 firmware status LED"
+    },
+    "R4": {
+      "part": "1 k\u03a9 1/4 W",
+      "role": "12 V power-good LED resistor"
+    },
+    "LED2": {
+      "part": "green LED",
+      "role": "protected 12 V rail indicator"
+    },
+    "J1": {
+      "part": "3-pin LED output connector",
+      "role": "V+, GND, DATA for channel J1"
+    },
+    "J2": {
+      "part": "3-pin LED output connector",
+      "role": "V+, GND, DATA for channel J2"
+    },
+    "J3": {
+      "part": "2-pin screw terminal",
+      "role": "12 V/GND board input from fused/protected high-current path"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+Ref,Part,Required rating/value,Breadboard/final note
+PSU,Mean Well RS-150-12,"12 V, 12.5 A, 150 W",Off-board mains/DC supply
+F1,Blade fuse,7.5 A only if wiring/protection/connectors support it,Place close to PSU + output
+RP1,Reverse-polarity protection,MOSFET ideal diode or diode module rated above fuse/current,Replaces 1N5822 for full-current build
+D1 optional,1N5822,"3 A average diode, 40 V",Only for low-current bench tests; not behind 7.5 A fuse in final path
+U1,SN74AHCT125N DIP-14,4.5–5.5 V VCC; TTL-level inputs,Do not substitute HC125 casually
+C1,Electrolytic capacitor,1000 µF / 25 V,Across protected 12 V and GND
+C2,Ceramic capacitor,0.1 µF,Directly across U1 pin 14/pin 7
+C3,Capacitor,10 µF / ≥10 V,Near U1 5 V/GND
+"R1,R2",Resistors,470 Ω,Series with J1/J2 data
+R3,Resistor,220 Ω,GPIO27 red LED; ~5.9 mA assumed
+LED1,Red LED,standard indicator,Cathode to GND
+R4,Resistor,"1 kΩ, ≥1/4 W",12 V green LED; ~98 mW dissipated
+LED2,Green LED,standard indicator,Cathode to power GND
+"J1,J2",LED connectors,Rated for actual strip current,"V+, GND, DATA"
+J3,Screw terminal,Rated for fused current,12 V input to board/protection block

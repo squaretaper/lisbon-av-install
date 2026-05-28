@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1350" viewBox="0 0 2000 1350">
+<rect width="100%" height="100%" fill="#fbfbfb"/>
+<text x="70" y="70" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="42" font-weight="800" text-anchor="start">ESP32 LED Controller v6 — SN74AHCT125N proper schematic</text>
+<text x="70" y="116" fill="#b45309" font-family="Inter,Arial,Helvetica,sans-serif" font-size="29" font-weight="800" text-anchor="start">Answer: pins 10 and 13 go to +5 V, not GND, when channels 3/4 are unused and should be disabled.</text>
+<text x="70" y="153" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="24" font-weight="700" text-anchor="start">Reason: /OE is active-low. LOW/GND enables a buffer; HIGH/+5 V disables output to high-Z.</text>
+<line x1="90" y1="220" x2="1910" y2="220" stroke="#be185d" stroke-width="7" stroke-linecap="round" fill="none"/>
+<text x="105" y="203" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="24" font-weight="800" text-anchor="start">P5_LOGIC_USB  +5 V from ESP32 USB/VIN only</text>
+<line x1="90" y1="1210" x2="1910" y2="1210" stroke="#111827" stroke-width="7" stroke-linecap="round" fill="none"/>
+<text x="105" y="1193" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="24" font-weight="800" text-anchor="start">GND_COMMON</text>
+<rect x="70" y="260" width="1180" height="420" rx="18" fill="#fff" stroke="#fed7aa" stroke-width="3"/>
+<text x="95" y="305" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="28" font-weight="800" text-anchor="start">Used buffers — enabled</text>
+<text x="105" y="382" fill="#2563eb" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">ESP32 GPIO25</text>
+<line x1="265" y1="374" x2="400" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="490,332 490,416 595,374" fill="#f3e8ff" stroke="#5b21b6" stroke-width="4"/>
+<text x="538" y="382" fill="#5b21b6" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="middle">1</text>
+<line x1="400" y1="374" x2="490" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="595" y1="374" x2="685" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="390" y="362" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="end">pin 2 / 1A</text>
+<text x="695" y="362" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="start">pin 3 / 1Y</text>
+<line x1="534" y1="438" x2="534" y2="492" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="534" cy="432" r="7" fill="#5b21b6" stroke="#5b21b6" stroke-width="2"/>
+<text x="552" y="477" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 1 /OE1</text>
+<text x="552" y="502" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="18" font-weight="700" text-anchor="start">GND enables</text>
+<line x1="400" y1="374" x2="400" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="790" y1="374" x2="863.0" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<rect x="863.0" y="354" width="104" height="40" rx="8" fill="#fff7ed" stroke="#d97706" stroke-width="3"/>
+<line x1="967.0" y1="374" x2="1040" y2="374" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="915.0" y="343" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="middle">R1 470Ω</text>
+<text x="1070" y="382" fill="#047857" font-family="Inter,Arial,Helvetica,sans-serif" font-size="23" font-weight="800" text-anchor="start">J1 DATA</text>
+<text x="105" y="542" fill="#2563eb" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">ESP32 GPIO26</text>
+<line x1="265" y1="534" x2="400" y2="534" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="490,492 490,576 595,534" fill="#f3e8ff" stroke="#5b21b6" stroke-width="4"/>
+<text x="538" y="542" fill="#5b21b6" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="middle">2</text>
+<line x1="400" y1="534" x2="490" y2="534" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="595" y1="534" x2="685" y2="534" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="390" y="522" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="end">pin 5 / 2A</text>
+<text x="695" y="522" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="start">pin 6 / 2Y</text>
+<line x1="534" y1="598" x2="534" y2="652" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="534" cy="592" r="7" fill="#5b21b6" stroke="#5b21b6" stroke-width="2"/>
+<text x="552" y="637" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 4 /OE2</text>
+<text x="552" y="662" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="18" font-weight="700" text-anchor="start">GND enables</text>
+<line x1="790" y1="534" x2="863.0" y2="534" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<rect x="863.0" y="514" width="104" height="40" rx="8" fill="#fff7ed" stroke="#d97706" stroke-width="3"/>
+<line x1="967.0" y1="534" x2="1040" y2="534" stroke="#d97706" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="915.0" y="503" fill="#d97706" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="middle">R2 470Ω</text>
+<text x="1070" y="542" fill="#047857" font-family="Inter,Arial,Helvetica,sans-serif" font-size="23" font-weight="800" text-anchor="start">J2 DATA</text>
+<line x1="534" y1="492" x2="534" y2="506" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="510" y1="506" x2="558" y2="506" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="518" y1="517" x2="550" y2="517" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="526" y1="528" x2="542" y2="528" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="568" y="521" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="700" text-anchor="start">pin 1 /OE1</text>
+<line x1="534" y1="652" x2="534" y2="666" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="510" y1="666" x2="558" y2="666" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="518" y1="677" x2="550" y2="677" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="526" y1="688" x2="542" y2="688" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<text x="568" y="681" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="700" text-anchor="start">pin 4 /OE2</text>
+<rect x="70" y="715" width="1180" height="330" rx="18" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
+<text x="95" y="760" fill="#5b21b6" font-family="Inter,Arial,Helvetica,sans-serif" font-size="28" font-weight="800" text-anchor="start">Unused buffers — disabled, outputs left NC</text>
+<text x="105" y="838" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">pin 9 / 3A</text>
+<line x1="260" y1="830" x2="400" y2="830" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="245" y1="842" x2="245" y2="856" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="221" y1="856" x2="269" y2="856" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="229" y1="867" x2="261" y2="867" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="237" y1="878" x2="253" y2="878" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="490,788 490,872 595,830" fill="#f3e8ff" stroke="#5b21b6" stroke-width="4"/>
+<text x="538" y="838" fill="#5b21b6" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="middle">3</text>
+<line x1="400" y1="830" x2="490" y2="830" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="595" y1="830" x2="685" y2="830" stroke="#64748b" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="8 8"/>
+<text x="390" y="818" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="end">pin 9 / 3A</text>
+<text x="695" y="818" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="start">pin 8 / 3Y = NC</text>
+<line x1="534" y1="894" x2="534" y2="948" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="534" cy="888" r="7" fill="#5b21b6" stroke="#5b21b6" stroke-width="2"/>
+<text x="552" y="933" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 10 /OE3</text>
+<text x="552" y="958" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="18" font-weight="700" text-anchor="start">+5 V disables</text>
+<line x1="534" y1="948" x2="534" y2="924" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="534,900 512,924 556,924" fill="#be185d" stroke="#be185d" stroke-width="2"/>
+<text x="568" y="922" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 10 /OE3</text>
+<text x="105" y="988" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">pin 12 / 4A</text>
+<line x1="260" y1="980" x2="400" y2="980" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="245" y1="992" x2="245" y2="1006" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="221" y1="1006" x2="269" y2="1006" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="229" y1="1017" x2="261" y2="1017" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="237" y1="1028" x2="253" y2="1028" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="490,938 490,1022 595,980" fill="#f3e8ff" stroke="#5b21b6" stroke-width="4"/>
+<text x="538" y="988" fill="#5b21b6" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="middle">4</text>
+<line x1="400" y1="980" x2="490" y2="980" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="595" y1="980" x2="685" y2="980" stroke="#64748b" stroke-width="3" stroke-linecap="round" fill="none" stroke-dasharray="8 8"/>
+<text x="390" y="968" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="end">pin 12 / 4A</text>
+<text x="695" y="968" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="800" text-anchor="start">pin 11 / 4Y = NC</text>
+<line x1="534" y1="1044" x2="534" y2="1098" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="534" cy="1038" r="7" fill="#5b21b6" stroke="#5b21b6" stroke-width="2"/>
+<text x="552" y="1083" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 13 /OE4</text>
+<text x="552" y="1108" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="18" font-weight="700" text-anchor="start">+5 V disables</text>
+<line x1="534" y1="1098" x2="534" y2="1074" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<polygon points="534,1050 512,1074 556,1074" fill="#be185d" stroke="#be185d" stroke-width="2"/>
+<text x="568" y="1072" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">pin 13 /OE4</text>
+<text x="865" y="838" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">NC — no wire</text>
+<text x="865" y="988" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="22" font-weight="800" text-anchor="start">NC — no wire</text>
+<rect x="1310" y="260" width="610" height="360" rx="18" fill="#fff" stroke="#bfdbfe" stroke-width="3"/>
+<text x="1335" y="305" fill="#2563eb" font-family="Inter,Arial,Helvetica,sans-serif" font-size="28" font-weight="800" text-anchor="start">Power pins + decoupling</text>
+<text x="1350" y="370" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="23" font-weight="800" text-anchor="start">U1 pin 14 VCC</text>
+<line x1="1540" y1="362" x2="1765" y2="362" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1765" y1="362" x2="1765" y2="220" stroke="#be185d" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1765" cy="220" r="7" fill="#be185d" stroke="#be185d" stroke-width="2"/>
+<text x="1350" y="430" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="23" font-weight="800" text-anchor="start">U1 pin 7 GND</text>
+<line x1="1540" y1="422" x2="1765" y2="422" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<line x1="1765" y1="422" x2="1765" y2="1210" stroke="#111827" stroke-width="4" stroke-linecap="round" fill="none"/>
+<circle cx="1765" cy="1210" r="7" fill="#111827" stroke="#111827" stroke-width="2"/>
+<rect x="1365" y="485" width="500" height="80" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+<text x="1385" y="518" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="700" text-anchor="start">C2 0.1µF directly at pin 14 ↔ pin 7</text>
+<text x="1385" y="548" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="20" font-weight="600" text-anchor="start">C3 10µF nearby across same rails</text>
+<rect x="1310" y="660" width="610" height="385" rx="18" fill="#fff" stroke="#cbd5e1" stroke-width="3"/>
+<text x="1335" y="705" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="28" font-weight="800" text-anchor="start">Continuity / wiring table</text>
+<rect x="1335" y="721" width="540" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="745" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">1 /OE1</text>
+<text x="1480" y="745" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">GND</text>
+<text x="1590" y="745" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">enable ch1</text>
+<rect x="1335" y="760" width="540" height="34" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="784" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">4 /OE2</text>
+<text x="1480" y="784" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">GND</text>
+<text x="1590" y="784" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">enable ch2</text>
+<rect x="1335" y="799" width="540" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="823" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">10 /OE3</text>
+<text x="1480" y="823" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">+5 V</text>
+<text x="1590" y="823" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">disable ch3</text>
+<rect x="1335" y="838" width="540" height="34" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="862" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">13 /OE4</text>
+<text x="1480" y="862" fill="#be185d" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">+5 V</text>
+<text x="1590" y="862" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">disable ch4</text>
+<rect x="1335" y="877" width="540" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="901" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">9 /3A</text>
+<text x="1480" y="901" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">GND</text>
+<text x="1590" y="901" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">unused input low</text>
+<rect x="1335" y="916" width="540" height="34" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="940" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">12 /4A</text>
+<text x="1480" y="940" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">GND</text>
+<text x="1590" y="940" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">unused input low</text>
+<rect x="1335" y="955" width="540" height="34" rx="5" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="979" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">8 /3Y</text>
+<text x="1480" y="979" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">NC</text>
+<text x="1590" y="979" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">leave open</text>
+<rect x="1335" y="994" width="540" height="34" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<text x="1350" y="1018" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">11 /4Y</text>
+<text x="1480" y="1018" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="800" text-anchor="start">NC</text>
+<text x="1590" y="1018" fill="#64748b" font-family="Inter,Arial,Helvetica,sans-serif" font-size="19" font-weight="600" text-anchor="start">leave open</text>
+<rect x="1310" y="1080" width="610" height="85" rx="18" fill="#fff7ed" stroke="#b45309" stroke-width="3"/>
+<text x="1335" y="1120" fill="#b45309" font-family="Inter,Arial,Helvetica,sans-serif" font-size="23" font-weight="800" text-anchor="start">Do not tie pins 10/13 to GND if the goal is to disable unused channels.</text>
+<text x="1335" y="1150" fill="#111827" font-family="Inter,Arial,Helvetica,sans-serif" font-size="21" font-weight="700" text-anchor="start">GND would enable them; +5 V is the clean high-Z state.</text>
+</svg>

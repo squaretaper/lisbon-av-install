@@ -1,0 +1,6 @@
+numpy
+pillow
+requests
+sounddevice
+ultralytics
+lap

@@ -1,0 +1,1602 @@
+(export
+	(version "E")
+	(design
+		(source "../../kicad/esp32-led-controller-v6/esp32-led-controller-v6.kicad_sch")
+		(date "2026-05-20T21:56:33")
+		(tool "Eeschema 10.0.3")
+		(sheet
+			(number "1")
+			(name "/")
+			(tstamps "/")
+			(title_block
+				(title "ESP32 LED Controller v6 — KiCad Bench Schematic")
+				(company "Lisbon AV installation")
+				(rev "v6-kicad-1")
+				(date "2026-05-20")
+				(source "esp32-led-controller-v6.kicad_sch")
+				(comment
+					(number "1")
+					(value "ESP32 USB-powered only; common GND; AHCT125 DIP-14 top-view shown for bench wiring")
+				)
+				(comment
+					(number "2")
+					(value "")
+				)
+				(comment
+					(number "3")
+					(value "")
+				)
+				(comment
+					(number "4")
+					(value "")
+				)
+				(comment
+					(number "5")
+					(value "")
+				)
+				(comment
+					(number "6")
+					(value "")
+				)
+				(comment
+					(number "7")
+					(value "")
+				)
+				(comment
+					(number "8")
+					(value "")
+				)
+				(comment
+					(number "9")
+					(value "")
+				)
+			)
+		)
+	)
+	(components
+		(comp
+			(ref "C1")
+			(value "1000µF / 25V")
+			(footprint "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
+			(description "12 V bulk smoothing capacitor")
+			(fields
+				(field
+					(name "Footprint") "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "12 V bulk smoothing capacitor")
+			)
+			(libsource
+				(lib "Ren")
+				(part "C_POL")
+				(description "Polarized capacitor")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "6675d99e-939c-4ba6-8dc6-05a5ecd54a22")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C2")
+			(value "0.1µF")
+			(description "U1 high-frequency decoupling")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "U1 high-frequency decoupling")
+			)
+			(libsource
+				(lib "Ren")
+				(part "C")
+				(description "Unpolarized capacitor")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "f85a8aef-033f-495c-9990-d48d9794b28a")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C3")
+			(value "10µF")
+			(description "U1 mid-frequency decoupling")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "U1 mid-frequency decoupling")
+			)
+			(libsource
+				(lib "Ren")
+				(part "C")
+				(description "Unpolarized capacitor")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "9a706c57-29e0-4820-bc04-ddaa514bae5e")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "D1")
+			(value "1N5822? REVIEW CURRENT")
+			(footprint "Diode_THT:D_DO-201AD_P15.24mm_Horizontal")
+			(description "Reverse polarity diode; current/thermal rating must be reviewed")
+			(fields
+				(field
+					(name "Footprint") "Diode_THT:D_DO-201AD_P15.24mm_Horizontal")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Reverse polarity diode; current/thermal rating must be reviewed")
+			)
+			(libsource
+				(lib "Ren")
+				(part "D_SCHOTTKY")
+				(description "Schottky diode")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "5431918e-0803-48ea-9960-5bb0bbc6b340")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "F1")
+			(value "7.5A blade / off-board inline")
+			(description "Off-board inline blade fuse")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Off-board inline blade fuse")
+			)
+			(libsource
+				(lib "Ren")
+				(part "FUSE")
+				(description "Blade fuse / inline fuse")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "2545ffe2-f13f-4be4-a43e-433c8937ca60")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J1")
+			(value "LED OUT 1")
+			(footprint "TerminalBlock:TerminalBlock_bornier-3_P5.08mm")
+			(description "LED strip output 1: V+, GND, DATA")
+			(fields
+				(field
+					(name "Footprint") "TerminalBlock:TerminalBlock_bornier-3_P5.08mm")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "LED strip output 1: V+, GND, DATA")
+			)
+			(libsource
+				(lib "Ren")
+				(part "CONN_3PIN_LEFT")
+				(description "Three pin LED output connector")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "771829a2-ea0d-4315-b845-af1a41c9ee68")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J2")
+			(value "LED OUT 2")
+			(footprint "TerminalBlock:TerminalBlock_bornier-3_P5.08mm")
+			(description "LED strip output 2: V+, GND, DATA")
+			(fields
+				(field
+					(name "Footprint") "TerminalBlock:TerminalBlock_bornier-3_P5.08mm")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "LED strip output 2: V+, GND, DATA")
+			)
+			(libsource
+				(lib "Ren")
+				(part "CONN_3PIN_LEFT")
+				(description "Three pin LED output connector")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "ec03a33f-e45e-4222-ad09-6e0c36428d4b")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "J3")
+			(value "12V IN")
+			(footprint "TerminalBlock:TerminalBlock_bornier-2_P5.08mm")
+			(description "12 V input screw terminal")
+			(fields
+				(field
+					(name "Footprint") "TerminalBlock:TerminalBlock_bornier-2_P5.08mm")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "12 V input screw terminal")
+			)
+			(libsource
+				(lib "Ren")
+				(part "CONN_2PIN_LEFT")
+				(description "Two pin screw terminal")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "fef7dd16-b2d4-4b15-8a53-57e3ca469ab9")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "LED1")
+			(value "red status")
+			(description "Firmware controlled status LED")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Firmware controlled status LED")
+			)
+			(libsource
+				(lib "Ren")
+				(part "LED")
+				(description "Light emitting diode")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "d8f28e3c-6eaa-4999-82be-5e197bceb604")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "LED2")
+			(value "green power-good")
+			(description "12 V power-good LED")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "12 V power-good LED")
+			)
+			(libsource
+				(lib "Ren")
+				(part "LED")
+				(description "Light emitting diode")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "c84924be-e8e8-4629-96b3-2aaa531a44eb")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R1")
+			(value "470Ω")
+			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+			(description "Series data resistor for J1")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Series data resistor for J1")
+			)
+			(libsource
+				(lib "Ren")
+				(part "R_US")
+				(description "Resistor, US zig-zag symbol")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "07869a7c-125d-444e-abde-18e7379e88c1")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R2")
+			(value "470Ω")
+			(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+			(description "Series data resistor for J2")
+			(fields
+				(field
+					(name "Footprint") "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Series data resistor for J2")
+			)
+			(libsource
+				(lib "Ren")
+				(part "R_US")
+				(description "Resistor, US zig-zag symbol")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "42aac38a-ccab-44ee-81c7-7227e999c17d")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R3")
+			(value "220Ω")
+			(description "GPIO27 status LED resistor")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "GPIO27 status LED resistor")
+			)
+			(libsource
+				(lib "Ren")
+				(part "R_US")
+				(description "Resistor, US zig-zag symbol")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "ee68d162-e9e7-4fc0-9081-54466fa968a0")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R4")
+			(value "1kΩ")
+			(description "Power-good LED resistor")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Power-good LED resistor")
+			)
+			(libsource
+				(lib "Ren")
+				(part "R_US")
+				(description "Resistor, US zig-zag symbol")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "6f9aed0c-9d32-432c-9843-ce69025d4f7e")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U1")
+			(value "SN74AHCT125N / 74AHCT125 DIP-14")
+			(footprint "Package_DIP:DIP-14_W7.62mm_LongPads")
+			(datasheet "https://www.ti.com/lit/ds/symlink/sn74ahct125.pdf")
+			(fields
+				(field
+					(name "Footprint") "Package_DIP:DIP-14_W7.62mm_LongPads")
+				(field
+					(name "Datasheet") "https://www.ti.com/lit/ds/symlink/sn74ahct125.pdf")
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Ren")
+				(part "SN74AHCT125N_DIP14_TOP")
+				(description "74AHCT125 DIP-14 top-view pin-location symbol")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "adf2ef2a-ada9-4d76-9c44-60673cd4c375")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "14")
+						)
+						(pin
+							(num "13")
+						)
+						(pin
+							(num "12")
+						)
+						(pin
+							(num "11")
+						)
+						(pin
+							(num "10")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "8")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U2")
+			(value "ESP32 DevKit V1 / USB only")
+			(description "USB-powered ESP32 devkit")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "USB-powered ESP32 devkit")
+			)
+			(libsource
+				(lib "Ren")
+				(part "ESP32_DEVKIT_V1_USB_ONLY")
+				(description "ESP32 DevKit V1, USB powered only")
+			)
+			(property
+				(name "Sheetname")
+				(value "")
+			)
+			(property
+				(name "Sheetfile")
+				(value "esp32-led-controller-v6.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "dd2b92b2-8fa9-42ae-9de0-283a8c568e66")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "VIN")
+						)
+						(pin
+							(num "G25")
+						)
+						(pin
+							(num "G26")
+						)
+						(pin
+							(num "G27")
+						)
+						(pin
+							(num "GND")
+						)
+					)
+				)
+			)
+		)
+	)
+	(groups)
+	(variants)
+	(libparts
+		(libpart
+			(lib "Ren")
+			(part "C")
+			(description "Unpolarized capacitor")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "C")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Unpolarized capacitor")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "CONN_2PIN_LEFT")
+			(description "Two pin screw terminal")
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_2")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Two pin screw terminal")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "CONN_3PIN_LEFT")
+			(description "Three pin LED output connector")
+			(fields
+				(field
+					(name "Reference") "J")
+				(field
+					(name "Value") "Conn_3")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Three pin LED output connector")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "V+")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "GND")
+					(type "passive")
+				)
+				(pin
+					(num "3")
+					(name "DATA")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "C_POL")
+			(description "Polarized capacitor")
+			(fields
+				(field
+					(name "Reference") "C")
+				(field
+					(name "Value") "C_Polarized")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Polarized capacitor")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "+")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "-")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "D_SCHOTTKY")
+			(description "Schottky diode")
+			(fields
+				(field
+					(name "Reference") "D")
+				(field
+					(name "Value") "D_Schottky")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Schottky diode")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "A")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "K")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "ESP32_DEVKIT_V1_USB_ONLY")
+			(description "ESP32 DevKit V1, USB powered only")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "ESP32 DevKit V1")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "ESP32 DevKit V1, USB powered only")
+			)
+			(pins
+				(pin
+					(num "G25")
+					(name "GPIO25")
+					(type "output")
+				)
+				(pin
+					(num "G26")
+					(name "GPIO26")
+					(type "output")
+				)
+				(pin
+					(num "G27")
+					(name "GPIO27")
+					(type "output")
+				)
+				(pin
+					(num "GND")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "VIN")
+					(name "VIN/5V")
+					(type "power_out")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "FUSE")
+			(description "Blade fuse / inline fuse")
+			(fields
+				(field
+					(name "Reference") "F")
+				(field
+					(name "Value") "Fuse")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Blade fuse / inline fuse")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "LED")
+			(description "Light emitting diode")
+			(fields
+				(field
+					(name "Reference") "LED")
+				(field
+					(name "Value") "LED")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Light emitting diode")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "A")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "K")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "R_US")
+			(description "Resistor, US zig-zag symbol")
+			(fields
+				(field
+					(name "Reference") "R")
+				(field
+					(name "Value") "R")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Resistor, US zig-zag symbol")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Ren")
+			(part "SN74AHCT125N_DIP14_TOP")
+			(description "74AHCT125 DIP-14 top-view pin-location symbol")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "SN74AHCT125N")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "74AHCT125 DIP-14 top-view pin-location symbol")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "/OE1")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "1A")
+					(type "input")
+				)
+				(pin
+					(num "3")
+					(name "1Y")
+					(type "output")
+				)
+				(pin
+					(num "4")
+					(name "/OE2")
+					(type "input")
+				)
+				(pin
+					(num "5")
+					(name "2A")
+					(type "input")
+				)
+				(pin
+					(num "6")
+					(name "2Y")
+					(type "output")
+				)
+				(pin
+					(num "7")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "8")
+					(name "3Y")
+					(type "output")
+				)
+				(pin
+					(num "9")
+					(name "3A")
+					(type "input")
+				)
+				(pin
+					(num "10")
+					(name "/OE3")
+					(type "input")
+				)
+				(pin
+					(num "11")
+					(name "4Y")
+					(type "output")
+				)
+				(pin
+					(num "12")
+					(name "4A")
+					(type "input")
+				)
+				(pin
+					(num "13")
+					(name "/OE4")
+					(type "input")
+				)
+				(pin
+					(num "14")
+					(name "VCC")
+					(type "power_in")
+				)
+			)
+		)
+	)
+	(libraries)
+	(nets
+		(net
+			(code "1")
+			(name "/+5V_LOGIC")
+			(class "Default")
+			(node
+				(ref "C2")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "C3")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "10")
+				(pinfunction "/OE3_10")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "13")
+				(pinfunction "/OE4_13")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "14")
+				(pinfunction "VCC_14")
+				(pintype "power_in")
+			)
+			(node
+				(ref "U2")
+				(pin "VIN")
+				(pinfunction "VIN/5V_VIN")
+				(pintype "power_out")
+			)
+		)
+		(net
+			(code "2")
+			(name "/+12V_IN")
+			(class "Default")
+			(node
+				(ref "F1")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J3")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "3")
+			(name "/+12V_PROTECTED")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "1")
+				(pinfunction "+_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "D1")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "1")
+				(pinfunction "V+_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "J2")
+				(pin "1")
+				(pinfunction "V+_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R4")
+				(pin "1")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "4")
+			(name "/ESP32_GPIO25")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "2")
+				(pinfunction "1A_2")
+				(pintype "input")
+			)
+			(node
+				(ref "U2")
+				(pin "G25")
+				(pinfunction "GPIO25_G25")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "5")
+			(name "/ESP32_GPIO26")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "5")
+				(pinfunction "2A_5")
+				(pintype "input")
+			)
+			(node
+				(ref "U2")
+				(pin "G26")
+				(pinfunction "GPIO26_G26")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "6")
+			(name "/ESP32_GPIO27")
+			(class "Default")
+			(node
+				(ref "R3")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U2")
+				(pin "G27")
+				(pinfunction "GPIO27_G27")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "7")
+			(name "/GND")
+			(class "Default")
+			(node
+				(ref "C1")
+				(pin "2")
+				(pinfunction "-_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "C2")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
+				(ref "C3")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J1")
+				(pin "2")
+				(pinfunction "GND_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J2")
+				(pin "2")
+				(pinfunction "GND_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "J3")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "LED1")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "LED2")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "1")
+				(pinfunction "/OE1_1")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "12")
+				(pinfunction "4A_12")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "4")
+				(pinfunction "/OE2_4")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "7")
+				(pinfunction "GND_7")
+				(pintype "power_in")
+			)
+			(node
+				(ref "U1")
+				(pin "9")
+				(pinfunction "3A_9")
+				(pintype "input")
+			)
+			(node
+				(ref "U2")
+				(pin "GND")
+				(pinfunction "GND_GND")
+				(pintype "power_in")
+			)
+		)
+		(net
+			(code "8")
+			(name "/J1_DATA")
+			(class "Default")
+			(node
+				(ref "J1")
+				(pin "3")
+				(pinfunction "DATA_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "R1")
+				(pin "2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "9")
+			(name "/J2_DATA")
+			(class "Default")
+			(node
+				(ref "J2")
+				(pin "3")
+				(pinfunction "DATA_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "R2")
+				(pin "2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "10")
+			(name "/U1_1Y")
+			(class "Default")
+			(node
+				(ref "R1")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "3")
+				(pinfunction "1Y_3")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "11")
+			(name "/U1_2Y")
+			(class "Default")
+			(node
+				(ref "R2")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "6")
+				(pinfunction "2Y_6")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "12")
+			(name "Net-(D1-A)")
+			(class "Default")
+			(node
+				(ref "D1")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "F1")
+				(pin "2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "13")
+			(name "Net-(LED1-A)")
+			(class "Default")
+			(node
+				(ref "LED1")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R3")
+				(pin "2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "14")
+			(name "Net-(LED2-A)")
+			(class "Default")
+			(node
+				(ref "LED2")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R4")
+				(pin "2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "15")
+			(name "unconnected-(U1-3Y-Pad8)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "8")
+				(pinfunction "3Y_8")
+				(pintype "output+no_connect")
+			)
+		)
+		(net
+			(code "16")
+			(name "unconnected-(U1-4Y-Pad11)")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "11")
+				(pinfunction "4Y_11")
+				(pintype "output+no_connect")
+			)
+		)
+	)
+)

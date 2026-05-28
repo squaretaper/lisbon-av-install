@@ -1,0 +1,7 @@
+# Keep generated schematic exports out of language stats and noisy diffs.
+diagrams/**/*.svg linguist-generated=true
+diagrams/**/*.net linguist-generated=true
+diagrams/**/*.rpt linguist-generated=true
+diagrams/**/*.pdf binary
+diagrams/**/*.png binary
+docs/**/*.png binary
