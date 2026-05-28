@@ -16,9 +16,34 @@
 - Sector aggregation and smoothing.
 - ES-9 CV output scheduling.
 - ES-9 audio input listening/analysis for light derivation.
-- ES-9 stereo main-mix/FX output on outputs 1/2 for agent performance mode.
+- ES-9 stereo main-mix/FX output on outputs 1/2 for Mac/realtime performance mode.
 - Morph and silence controls.
 - Telemetry/watchdogs.
+
+## Fast-loop / slow-loop contract
+
+The realtime bridge is the fast loop. It must make camera/audio/CV/light decisions locally from deterministic state and bounded heuristics. It must never wait on an LLM, cloud service, or networked agent before updating audio, CV, or lighting.
+
+A separate reflective sidecar may run as a slow loop every ~2–10 minutes:
+
+1. Read recent status snapshots/logs.
+2. Summarize whether the installation is too still, too dense, falsely glitching, visually overlit, or stuck.
+3. Write a compact `heuristic_profile` JSON file with bounded parameter nudges.
+4. Let the fast loop consume the profile only if it is valid, unexpired, and inside hard clamps.
+
+Suggested profile path:
+
+```text
+audio/runtime/heuristic_profile.json
+```
+
+Example profile:
+
+```text
+audio/heuristic_profile.example.json
+```
+
+The profile is advisory. Missing/malformed/expired profiles must fall back to safe defaults. See `10-reflective-agent-loop.md` for schema and review cadence.
 
 ## Endpoints
 
@@ -142,6 +167,21 @@ Implementation cautions:
 - Do not assume browser Web Audio can reliably address the ES-9's duplex multichannel I/O and DC-coupled CV channels; verify the actual runtime on the Mac mini.
 - If Node/Web Audio channel routing is flaky, use a proven CoreAudio/PortAudio/Max/DAW bridge and keep the server as state/control logic.
 - The hardware-direct Stereo Line Out 1U or ES-9 internal mixer route is a safety bypass, not the default artistic path.
+- Keep any LLM/agent review outside the audio callback and outside the per-event response loop. The agent may update a bounded heuristic profile; the realtime bridge performs immediately from local state.
+
+## Reflective heuristic profile
+
+If implemented, the fast loop may read `audio/runtime/heuristic_profile.json` and apply only clamped parameters such as:
+
+- `mode_bias` / `density_target`
+- `silence_hold_seconds`
+- `movement_gate_sensitivity`
+- `glitch_probability`
+- `brightness_ceiling` / `black_floor_bias`
+- `packet_complexity`
+- `max_cv_scale` within measured safe limits
+
+The profile must include `schema`, `updated_at`, `expires_at`, `profile_id`, and `reason`. Atomic writes are required: write a temp file, validate it, then rename into place. Never let a profile change ES-9 channel maps, serial ports, rack patch assumptions, firmware command semantics, or global safety clamps.
 
 ## Light state protocol to ESP32
 
@@ -204,6 +244,6 @@ Rules:
 - CV worker disconnect >5 s: decay sector activity to zero.
 - ESP32 disconnect: keep server running; log and retry.
 - ES-9 CV output failure: enter safe mode; stop morph; show alert in admin.
-- ES-9 main audio output failure or agent audio crash: fade/kill software output, stop morph, switch to hardware bypass if needed.
+- ES-9 main audio output failure or software audio crash: fade/kill software output, stop morph, switch to hardware bypass if needed.
 - Audio listener/analyser failure: keep safe audio output if possible; lights fall back to sector-derived colors; alert admin.
 - `/api/silence`: ramp CVs and main audio to zero and send lights black/low within 500 ms.

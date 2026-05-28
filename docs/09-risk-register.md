@@ -7,15 +7,20 @@
 Impact: high.  
 Mitigation: Day 1 CV output gate; test `node-web-audio-api`; fallback to `naudiodon`/PortAudio; document channel map.
 
-### ES-9 full-duplex agent audio path is unreliable
+### ES-9 full-duplex software audio path is unreliable
 
 Impact: high; this is now the default artistic sound path.  
 Mitigation: Day 1 simultaneous audio-in + main-out + 8-CV-output gate; lower sample rate/buffer if needed; fallback to `naudiodon`/PortAudio, Max, or DAW routing; keep hardware bypass via Stereo Line Out 1U or ES-9 internal mixer documented and patchable.
 
-### Agent main mix crashes, clips, or feeds back
+### Mac main mix crashes, clips, or feeds back
 
 Impact: high.  
 Mitigation: limiter, conservative gain staging, watchdog, `/api/silence`, physical mixer mute, and no analog patch from ES-9 main outs back into ES-9 inputs unless intentionally tested.
+
+### Agent/LLM in realtime loop adds latency or brittle failure
+
+Impact: high if used in the reflex arc.
+Mitigation: keep the realtime bridge deterministic and local; use any agent only as a slow reflective sidecar that writes bounded, expiring heuristic profiles. Missing/malformed/expired profiles must fall back to safe defaults. Never let agent output change channel maps, gain/CV/brightness safety clamps, serial port names, or live code.
 
 ### Camera tracking marginal in dim gallery
 
@@ -72,13 +77,14 @@ Mitigation: keep it optional and tiny; no auth beyond local network; QR fallback
 - CV at audio rate.
 - Hard-coded pixel sector thresholds.
 - Cloud inference or external services.
+- LLM/agent calls in the immediate audio/CV/light response path.
 - Whole-rack travel sprawl.
 
 ## Kill/fallback modes
 
-- `/api/silence`: ramp CVs, agent main output, and lights to safe state.
+- `/api/silence`: ramp CVs, Mac main output, and lights to safe state.
 - CV worker disconnect: sector activity decays.
 - ESP32 disconnect: sound continues; lights fail safe.
-- Audio listener/analyser disconnect: agent can continue safe main output if stable; lights use sector fallback or idle.
-- Agent audio engine/main output failure: fade/kill software output, use hardware bypass or ES-9 internal mixer if patched.
+- Audio listener/analyser disconnect: keep safe main output if stable; lights use sector fallback or idle.
+- Software audio engine/main output failure: fade/kill software output, use hardware bypass or ES-9 internal mixer if patched.
 - ES-9 CV output failure: stop show or pivot to manually animated rack state; do not fake interactivity.

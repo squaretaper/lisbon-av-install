@@ -27,7 +27,7 @@ Acceptance:
 - Channel mapping is documented.
 - Voltage scaling is measured and written to `tunings.json`.
 
-### Gate 2: ES-9 full-duplex agent audio path
+### Gate 2: ES-9 full-duplex software audio path
 
 Minimum test:
 
@@ -41,7 +41,7 @@ Acceptance:
 
 - Levels are stable enough for listening/FX/light derivation.
 - Input, main-output, and CV-output channel mappings are documented.
-- Audible output comes from the intended Mac/agent path with no feedback loop.
+- Audible output comes from the intended Mac/realtime bridge path with no feedback loop.
 - Failure mode and bypass route are known if device/audio engine disconnects.
 
 ### Gate 3: CV tracking in dim conditions
@@ -88,13 +88,14 @@ Build in this order:
 4. ES-9 CV scheduler with `cvMap` presets.
 5. ES-9 audio listener + main-mix/FX output path.
 6. Light derivation and ESP32 WebSocket frames.
-7. Optional PWA: `/morph`, `/silence`, status page.
-8. Telemetry and watchdogs.
+7. Optional reflective heuristic-profile reader with strict clamps; do this after the fast loop is stable, not before.
+8. Optional PWA: `/morph`, `/silence`, status page.
+9. Telemetry and watchdogs.
 
 ## Phase 5 — Dry run
 
 - Full system on Mac Studio.
-- Rack audio through Mac/agent path to mixer/speakers, with hardware bypass verified.
+- Rack audio through Mac/realtime bridge path to mixer/speakers, with hardware bypass verified.
 - ESP32 drives real or test strip.
 - Walk through sectors and verify audible changes.
 - Test empty-room state.

@@ -15,9 +15,10 @@ Current runnable source in this public snapshot is the hardware-facing path: nat
 - Use CV tracking to divide the room into sectors.
 - Send smoothed sector activity to the ES-9 as CV.
 - Use the Eurorack/SWN as the synthesis voice.
-- Read ES-9 audio return for listening/light derivation, and send the Mac stereo main mix back to the ES-9 1/4" main outs.
+- Read ES-9 audio return for realtime bridge listening/light derivation, and send the Mac stereo main mix back to the ES-9 1/4" main outs.
 - Drive two WS2811 LED channels from the ESP32 controller.
 - Optional PWA is a minimal morph/silence/status interface, not a visitor-registration system.
+- Keep AI/agent reasoning out of the realtime reflex arc: deterministic fast loop for audio/CV/lights, slow reflective loop for bounded heuristic updates.
 
 ## Read order
 
@@ -30,6 +31,7 @@ Current runnable source in this public snapshot is the hardware-facing path: nat
 7. `07-mac-studio-to-mac-mini-transfer.md` — transfer and reproducibility.
 8. `08-lisbon-install-runbook.md` — on-site setup/run/shutdown.
 9. `09-risk-register.md` — risks and mitigations.
+10. `10-reflective-agent-loop.md` — fast reflex / slow agentic metabolism architecture.
 
 ## Day 1 gating tests
 

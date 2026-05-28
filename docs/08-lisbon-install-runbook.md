@@ -49,16 +49,17 @@ Then verify:
 - ESP32 connected.
 - ES-9 CV output, audio input, and main output ready.
 - Admin dashboard or logs show sector activity.
+- If the reflective sidecar is enabled, `audio/runtime/heuristic_profile.json` is valid, recent, and visibly advisory; if disabled/missing, fast-loop defaults still run safely.
 
 ## Rack/audio startup
 
-1. Rack, mixer, and agent main output down/muted.
+1. Rack, mixer, and Mac main output down/muted.
 2. Power rack.
 3. Confirm SWN state/pitches.
 4. Confirm VCA/CV patch and SWN/audio return into ES-9 inputs 1+2.
-5. Confirm Mac/agent sends low-level stereo main mix to ES-9 outputs 1/2 / 1/4" main outs.
+5. Confirm Mac/realtime bridge sends low-level stereo main mix to ES-9 outputs 1/2 / 1/4" main outs.
 6. Bring mixer/monitors up slowly.
-7. Trigger or walk sectors; confirm voice amplitudes respond and agent output changes musically.
+7. Trigger or walk sectors; confirm voice amplitudes respond and the software output changes musically.
 8. Confirm ES-9 listener/analyser sees audio and lights react.
 9. Confirm hardware bypass path is available but muted/unselected unless needed.
 
@@ -85,6 +86,14 @@ Then verify:
 - Set conservative global brightness.
 - Raise only after current/heat check.
 
+### Reflective heuristic loop if used
+
+- Start with the reflective sidecar disabled; confirm the fast loop feels stable first.
+- Enable only bounded profile updates, not live code edits or hardware routing changes.
+- Confirm each profile has `expires_at`, `profile_id`, and a human-readable `reason`.
+- Tail logs/status for profile adoption and make sure audio/CV/brightness clamps remain in force.
+- If a profile makes behavior worse, delete/disable `audio/runtime/heuristic_profile.json`; the fast loop must fall back to defaults.
+
 ### Morph PWA if used
 
 - Program NFC tag to local URL.
@@ -98,7 +107,7 @@ Before visitors:
 
 - Start system.
 - Confirm state snapshot.
-- Confirm rack audio reaches the Mac/agent and the ES-9 main outs.
+- Confirm rack audio reaches the Mac/realtime bridge and the ES-9 main outs.
 - Confirm LED output.
 - Confirm camera tracking.
 - Keep logs visible or tailable.
@@ -106,14 +115,16 @@ Before visitors:
 During show:
 
 - Do not edit live code.
+- Do not put LLM/agent calls in the immediate sense/respond loop.
 - Use `/api/silence` if audio/lighting goes unsafe.
-- If agent audio path fails or feeds back, hit `/api/silence`, mute mixer/channel, and switch to documented hardware bypass only after levels are safe.
+- If software audio path fails or feeds back, hit `/api/silence`, mute mixer/channel, and switch to documented hardware bypass only after levels are safe.
+- If a reflective profile causes bad behavior, disable/delete the profile file and continue on fast-loop defaults.
 - If CV fails, allow sectors to decay; restart CV worker when safe.
 - If ESP32 fails, sound can continue; restart controller/server link.
 
 ## Shutdown
 
-1. Trigger silence/fade for CV, lights, and agent main output.
+1. Trigger silence/fade for CV, lights, and Mac main output.
 2. Stop server/CV worker.
 3. Turn monitor/mixer down.
 4. Power rack down.

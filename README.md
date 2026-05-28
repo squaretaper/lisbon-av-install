@@ -26,15 +26,19 @@ SWN / modular stereo return
 
 | Path | Purpose |
 |---|---|
-| `audio/` | Python ES-9/CoreAudio bridge: stereo pass-through, audio telemetry, camera/person tracking, safe DC CV generation. |
+| `audio/` | Python ES-9/CoreAudio bridge: stereo pass-through, audio telemetry, camera/person tracking, safe DC CV generation, and example reflective heuristic profile. |
 | `lighting/` | Python bridge from audio/CV status JSON to ESP32 serial light commands. |
 | `cv/camera_probe/` | Native macOS Swift/AVFoundation camera bridge packaged as a tiny GUI-session app for Camera/TCC permission. |
 | `firmware/dual_strip_dystopia_test/` | Active ESP32/FastLED firmware for two WS2811 strips, pure red/black only, live serial controls. |
 | `firmware/*_test/` | Bench sketches for status LED, J1 strip, red-chaos strip, and case light-pipe validation. |
-| `docs/` | Architecture, ES-9/SWN patch map, ESP32 electrical notes, runbook, and risk register. |
+| `docs/` | Architecture, ES-9/SWN patch map, reflective agent-loop architecture, ESP32 electrical notes, runbook, and risk register. |
 | `docs/esp32-breadboard/` | Audited breadboard/perfboard pack, BOM, netlist, and wiring checklist. |
 | `diagrams/` and `kicad/` | Generated schematic exports plus editable KiCad project files for the ESP32 LED controller. |
 | `tests/` | Pure-Python tests for CV mapping, audio analysis, lighting decisions, and firmware invariants. |
+
+## Realtime / reflective split
+
+The live installation keeps agentic behavior out of the immediate audio/CV/light reflex path. The realtime bridge remains deterministic and local; any agent or reviewer reads telemetry over minutes and writes a bounded, expiring `heuristic_profile` for the fast loop to clamp or ignore. See `docs/10-reflective-agent-loop.md` and `audio/heuristic_profile.example.json`.
 
 ## Active patch map
 

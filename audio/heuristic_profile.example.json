@@ -1,0 +1,36 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "updated_at": "2026-05-28T14:00:00Z",
+  "expires_at": "2026-05-28T14:10:00Z",
+  "source": "reflective_agent_or_deterministic_reviewer",
+  "profile_id": "example-late-gallery-sparse",
+  "reason": "Example only: room has been still for several minutes; preserve sparse drone, lower false glitching, keep strong response to actual movement.",
+  "mode_bias": "sparse_drone",
+  "scene": {
+    "silence_hold_seconds": 18,
+    "density_target": 0.28,
+    "avoid_repetition_seconds": 90
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.42,
+    "stillness_deadband_scale": 1.0,
+    "sector_activity_weight": 0.65
+  },
+  "audio": {
+    "drone_bias": 0.58,
+    "glitch_probability": 0.06,
+    "high_band_strobe_threshold_scale": 1.1,
+    "feedback_suppression": 0.8
+  },
+  "lights": {
+    "brightness_ceiling": 176,
+    "black_floor_bias": 0.55,
+    "strobe_ceiling": 240,
+    "packet_complexity": 0.7
+  },
+  "cv": {
+    "max_cv_scale": 1.0,
+    "movement_gate_ceiling_v": 4.5,
+    "pitch_drift_scale": 0.5
+  }
+}

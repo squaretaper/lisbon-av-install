@@ -39,6 +39,10 @@ Fallback/prototype mode is still available with `--vision-mode aggregate`; it us
 
 The status JSON includes `person_scene` plus selected ES-9 input-pair RMS/peak/frequency/glitch telemetry in `audio_input`. `audio_input.source_input_channels` records the 1-based CoreAudio input pair currently being monitored/routed. Frequency/glitch analysis includes both zero-crossing and FFT-band features (`dominant_frequency_hz`, `spectral_centroid_hz`, `low_band_ratio`, `mid_band_ratio`, `high_band_ratio`) so lighting can distinguish low drones from high-frequency glitches.
 
+## Agentic architecture note
+
+Keep the live bridge as the fast deterministic loop. Camera/audio analysis should immediately map to bounded CV, audio, and lighting behavior without waiting on any LLM/agent call. If an agentic layer is added, it should review recent status/log windows every few minutes and write an advisory `audio/runtime/heuristic_profile.json` with bounded parameters only; `audio/heuristic_profile.example.json` documents the shape. The bridge must ignore missing, malformed, expired, or out-of-range profiles and continue with safe defaults. See `docs/10-reflective-agent-loop.md`.
+
 ## ES-9 config notes
 
 The 2026-05-25 hosted config screenshot showed the important input side appears right: physical `Input 1 -> USB audio 1` and `Input 2 -> USB audio 2`, so the Mac should see the rack return on CoreAudio inputs 1/2. If ES-9 and a known microphone both enumerate but read digital zero, check macOS Microphone/TCC for the responsible Python/venv binary before changing ES-9 routing. After granting TCC microphone access, ES-9 inputs 1/2 produced nonzero live RMS/peak telemetry and now drive lighting directly.

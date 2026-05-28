@@ -2,7 +2,7 @@
 
 ## Rack goal
 
-Use the Palette 62 as a compact hardware synthesis engine with the Mac mini/agent as an active performer. SWN supplies the rack voice. ES-9 supplies bidirectional audio/CV: rack audio into Mac, Mac/agent stereo main mix back out, and Mac CV/control to the rack.
+Use the Palette 62 as a compact hardware synthesis engine with the Mac mini realtime bridge as an active performer. SWN supplies the rack voice. ES-9 supplies bidirectional audio/CV: rack audio into Mac, Mac stereo main mix back out, and Mac CV/control to the rack.
 
 ## Current Palette 62 plan
 
@@ -23,10 +23,10 @@ Main row, 62 HP:
 
 ## Audio topology
 
-Primary / artistic path — agent performance mode:
+Primary / artistic path — software performance mode:
 
 ```text
-SWN stereo out → optional hardware FX → ES-9 inputs 1+2 → Mac mini agent/audio engine
+SWN stereo out → optional hardware FX → ES-9 inputs 1+2 → Mac mini realtime audio engine
                                                        → ES-9 1/4" main outs → mixer → Genelecs
                                                        └→ analyser/listening loop → lights/CV/morph responses
 Mac mini → ES-9 3.5mm DC-coupled outputs 1-8 → rack CV/control
@@ -41,17 +41,17 @@ SWN stereo out → optional hardware FX → ES-9 inputs 1+2
                                       → ES-9 internal mixer/direct monitor → ES-9 1/4" main outs → mixer
 ```
 
-Agent performance mode intentionally puts the Mac in the main audio path so it can hear and respond to the music it is playing. The bypass path remains for safety if software routing, gain staging, latency, or feedback behavior becomes unstable.
+Software performance mode intentionally puts the Mac realtime bridge in the main audio path so it can hear and respond to the music it is playing. The bypass path remains for safety if software routing, gain staging, latency, or feedback behavior becomes unstable.
 
 ## CV topology
 
 Use physical ES-9 CV outputs as the canonical labels. Software channel numbers may differ by driver/routing and must be calibrated.
 
-Official ES-9 defaults to remember for the Mac/agent routing:
+Official ES-9 defaults to remember for the Mac/realtime bridge routing:
 
 - ES-9 is a class-compliant USB 2.0 **16-in / 16-out** interface at 24-bit, 44.1/48/88.2/96 kHz.
 - Hardware inputs 1-14 route to DAW/CoreAudio inputs 1-14 by default; for this install, the primary rack return uses hardware inputs 1+2, with inputs 3-14 available for extra stems/taps.
-- Main 1/4" balanced outputs are DAW/CoreAudio outputs 1/2 by default and carry the audible Mac/agent stereo main mix.
+- Main 1/4" balanced outputs are DAW/CoreAudio outputs 1/2 by default and carry the audible Mac stereo main mix.
 - Physical 3.5mm DC-coupled outputs 1-8 are DAW/CoreAudio outputs 9-16 by default and carry CV/control signals.
 - The ES-9 internal mixer can route hardware inputs directly to main outs while USB simultaneously streams audio to/from the Mac.
 - USB bandwidth is not the limiting factor; channel mapping and software duplex routing are the real Day 1 tests.
@@ -140,12 +140,12 @@ For VCA/modulation use, ignore pitch math and calibrate empirically:
 - Record measured voltages in `tunings.json`.
 - Confirm no DC drift or surprise channel swap.
 
-### Full-duplex agent audio path
+### Full-duplex software audio path
 
 - Patch a known signal into ES-9 input 1, then a stereo rack/SWN return into ES-9 inputs 1+2.
 - Simultaneously send a low-level stereo test tone/noise/main-mix placeholder to ES-9 outputs 1/2 / 1/4" main outs.
 - Verify RMS/FFT/listening-loop data updates when SWN plays and decays when muted.
-- Verify the audible output comes from the intended Mac/agent path and that there is no feedback loop.
+- Verify the audible output comes from the intended Mac/realtime bridge path and that there is no feedback loop.
 - While audio I/O runs, hold/update all 8 CV outputs so we prove audio-in + main-out + CV-out together.
 
 ## Morph states
