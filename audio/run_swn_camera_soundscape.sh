@@ -20,7 +20,7 @@ exec python audio/lisbon_swn_camera_bridge.py \
   --blocksize "${LISBON_BLOCKSIZE:-128}" \
   --stillness-deadband "${LISBON_STILLNESS_DEADBAND:-0.03}" \
   --stillness-frame-motion "${LISBON_STILLNESS_FRAME_MOTION:-0.03}" \
-  --preview-hz "${LISBON_PREVIEW_HZ:-5}" \
+  --preview-hz "${LISBON_PREVIEW_HZ:-10}" \
   --yolo-model "${LISBON_YOLO_MODEL:-yolo11n.pt}" \
   --status-path "${LISBON_STATUS_PATH:-audio/runtime/swn_camera_soundscape_status.json}" \
   --preview-path "${LISBON_PREVIEW_PATH:-audio/runtime/swn_camera_people_preview.jpg}"
