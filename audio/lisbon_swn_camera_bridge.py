@@ -63,15 +63,19 @@ MAIN_MIX_VCA_CV_INDEX = 5  # cv6 -> Intellijel Quad VCA CV1
 # Per-channel slew rates (Hz, 1-pole exp). Higher = snappier reaction.
 # voices 1/2/3 stay glacial so V/oct doesn't pop; mix VCA + glitch react
 # fast so movement feels responsive; timbral controls in between.
-# Live tuning 2026-06-03: operator reported volume control feels laggy
-# and distance doesn't track presence. Boosted mix VCA + glitch.
+# Live tuning 2026-06-03:
+#   - round 1: bumped mix VCA + glitch from global 6Hz default
+#   - round 2: operator reports "vol is jumpy". Mix VCA at 18Hz was
+#     tracking every YOLO bbox jitter. Dropped to 4Hz (~250ms tau) so
+#     it averages out detection bounce while a normal walk still moves
+#     volume noticeably. Glitch stays fast — it's supposed to be punchy.
 PER_CV_SMOOTHING_HZ = [
     6.0,    # cv1 voice1 1v/oct  — chord pitch, slow
     6.0,    # cv2 voice2 1v/oct
     6.0,    # cv3 voice3 1v/oct
     10.0,   # cv4 wavetable browse
     10.0,   # cv5 dispersion
-    18.0,   # cv6 main mix VCA   — fast, tracks presence
+    4.0,    # cv6 main mix VCA   — smoothed to average YOLO jitter
     24.0,   # cv7 glitch trigger — fastest, gates pink noise
     10.0,   # cv8 depth
 ]
