@@ -497,10 +497,13 @@ final class HTTPServer {
         let html = """
         <!doctype html>
         <html>
-          <head><title>Lisbon Camera Bridge</title></head>
+          <head>
+            <title>Lisbon Camera Bridge</title>
+            <base href="./" />
+          </head>
           <body style="margin:0;background:#111;color:#eee;font-family:-apple-system,BlinkMacSystemFont,sans-serif">
-            <div style="padding:12px">Lisbon Camera Bridge — <a style="color:#8cf" href="/status">status</a></div>
-            <img src="/stream.mjpeg" style="width:100vw;height:auto;display:block" />
+            <div style="padding:12px">Lisbon Camera Bridge — <a style="color:#8cf" href="status">status</a></div>
+            <img src="stream.mjpeg" style="width:100vw;height:auto;display:block" />
           </body>
         </html>
         """
