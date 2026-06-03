@@ -36,6 +36,18 @@ if [[ -z "$INSTALL_UID" ]]; then
   exit 1
 fi
 
+# Prime sudo once up front. Everything below uses cached credentials.
+# In a non-TTY context (cron, automation) require sudo to already be primed
+# or NOPASSWD; we cannot prompt.
+if ! sudo -n true 2>/dev/null; then
+  if ! sudo -v 2>/dev/null; then
+    echo "FATAL: need sudo for autologin defaults and System keychain edits." >&2
+    echo "       Run 'sudo -v' (and enter password) before invoking this script," >&2
+    echo "       or invoke it directly: sudo $0" >&2
+    exit 1
+  fi
+fi
+
 # --- 1. Tailscale ----------------------------------------------------------
 echo "--- Tailscale ---"
 if pgrep -f "io.tailscale.ipn.macsys.network-extension" >/dev/null; then
@@ -89,7 +101,7 @@ echo
 # --- 3. Wi-Fi credential placement ----------------------------------------
 echo "--- Wi-Fi credential ($VENUE_SSID) ---"
 SYSTEM_KEYCHAIN="/Library/Keychains/System.keychain"
-if sudo security find-generic-password -a "$VENUE_SSID" -s AirPort "$SYSTEM_KEYCHAIN" >/dev/null 2>&1; then
+if sudo security find-generic-password -l "$VENUE_SSID" "$SYSTEM_KEYCHAIN" >/dev/null 2>&1; then
   IN_SYSTEM=1
 else
   IN_SYSTEM=0
