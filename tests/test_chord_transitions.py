@@ -80,19 +80,23 @@ def test_mapper_set_chord_starts_transition():
     # Override the monotonic clock for deterministic timing
     base = mapper._chord_set_at
     mapper._chord_now = lambda: base + 0.0  # zero elapsed
+    mapper._drift_start = base  # neutralize glacial drift for this test
     active = mapper._active_chord()
     assert active is not None
-    # Just-after-set: voice_offsets should equal a
+    # Just-after-set: voice_offsets should equal a (drift phase is 0 -> sin=0)
     assert math.isclose(active["voice_offsets"][1], 7.0, abs_tol=0.1)
 
-    # Skip halfway
+    # Skip halfway. Drift advances too — re-anchor _drift_start so the test
+    # measures the transition crossfade, not the LFO position.
     mapper._chord_now = lambda: base + 5.0
+    mapper._drift_start = base + 5.0
     active = mapper._active_chord()
     # Voice 2 mid-way between 7 (open_fifth) and 3 (minor_triad) = 5
     assert math.isclose(active["voice_offsets"][1], 5.0, abs_tol=0.1)
 
-    # Skip past end
+    # Skip past end. Same re-anchor pattern.
     mapper._chord_now = lambda: base + 999.0
+    mapper._drift_start = base + 999.0
     active = mapper._active_chord()
     # Reached target
     assert math.isclose(active["voice_offsets"][1], 3.0, abs_tol=0.01)
