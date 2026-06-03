@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>ai.ren.lisbon.audio-probe</string>
+  <key>CFBundleName</key>
+  <string>Lisbon Audio Probe</string>
+  <key>CFBundleExecutable</key>
+  <string>LisbonAudioProbe</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSUIElement</key>
+  <true/>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Lisbon AV install captures audio from the Anker C200 microphone for slow-loop room analysis. The reflective reviewer reads RMS and band ratios to score whether the room is too quiet, too busy, or balanced. No audio is sent off-machine.</string>
+</dict>
+</plist>

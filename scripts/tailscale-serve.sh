@@ -4,14 +4,16 @@
 # and rebuilds.
 #
 # Adds:
-#   /camera/   ->  http://127.0.0.1:8765/   (camera probe; live frame, MJPEG, status)
+#   /camera/   ->  http://127.0.0.1:8765/   (camera probe: live frame, MJPEG, status)
+#   /audio/    ->  http://127.0.0.1:8767/   (room audio probe: rms, peak, FFT, status)
 #
-# Routes are added under /camera/ rather than at root so we can add more
-# bridges later (/swn/, /hermes/) without colliding.
+# Routes are path-scoped under /camera/ and /audio/ so additional bridges
+# (/swn/, /hermes/, /lights/) can land cleanly later without root-route
+# collisions.
 #
 # Requirements:
 #   - Tailscale.app installed and signed in
-#   - Camera probe LaunchAgent running (scripts/install-launchagents.sh)
+#   - Probe LaunchAgents running (scripts/install-launchagents.sh)
 #   - Tailscale HTTPS feature enabled in admin console (it is by default)
 set -euo pipefail
 
@@ -30,6 +32,9 @@ case "$action" in
     echo
     echo "=== adding /camera/ -> 127.0.0.1:8765 ==="
     "$TS" serve --bg --https=443 --set-path=/camera/ http://127.0.0.1:8765/
+    echo
+    echo "=== adding /audio/ -> 127.0.0.1:8767 ==="
+    "$TS" serve --bg --https=443 --set-path=/audio/ http://127.0.0.1:8767/
     echo
     "$TS" serve status
     ;;

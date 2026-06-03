@@ -136,11 +136,36 @@ def recent_fitness_by_family(history: list[dict]) -> dict[str, float]:
     return {fam: round(statistics.mean(vals), 4) for fam, vals in scores.items()}
 
 
+def read_room_audio(runtime_dir: Path) -> dict | None:
+    """Read the most recent room audio probe snapshot, if present.
+
+    The room audio probe writes a small JSON at room_audio_probe_status.json
+    independently of the ES-9 line-audio path. It's an acoustic read of the
+    room via the camera's C200 mic. The reviewer uses it as a complement to
+    the SWN bridge's line-level audio_input — when ES-9 ins are dead but the
+    room is alive, this is the channel that proves it.
+
+    Returns None if the file is missing, stale (>15s), or malformed.
+    """
+    path = runtime_dir / "room_audio_probe_status.json"
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    age_ms = data.get("last_update_age_ms")
+    if isinstance(age_ms, (int, float)) and age_ms > 15000:
+        return None
+    return data
+
+
 def build_agent_brief(
     *,
     snapshots: list[dict],
     history: list[dict],
     profiles_dir: Path,
+    runtime_dir: Path | None = None,
 ) -> dict:
     """Compact JSON brief for an agent: room state, history, options."""
     family, reason = classify_window(snapshots)
@@ -180,6 +205,9 @@ def build_agent_brief(
             "timestamp": last.get("timestamp"),
         }
 
+    # Room audio probe (C200 mic). Independent of ES-9 line audio.
+    room_audio = read_room_audio(runtime_dir) if runtime_dir else None
+
     return {
         "now": time.time(),
         "samples_in_window": len(snapshots),
@@ -188,6 +216,7 @@ def build_agent_brief(
         "last_profile": last_profile,
         "last_score": last_score,
         "current_room": current,
+        "room_audio": room_audio,
         "available_families": sorted(SEED_FAMILIES.keys()),
         "schema_bounds": {k: list(v) for k, v in BOUNDS.items()},
         "instructions": (
@@ -195,7 +224,9 @@ def build_agent_brief(
             "Pick a family from `available_families`, optionally mutate it within `schema_bounds`, "
             "or write a fully custom profile. Use `apply-profile` to write it. "
             "Prefer rest after long busy stretches, prefer surprise after long stretches of the same family. "
-            "Do not write the same family twice in a row unless the room demands it."
+            "Do not write the same family twice in a row unless the room demands it. "
+            "Use both `current_room.audio_rms` (ES-9 line, may be 0 if cable issue) and "
+            "`room_audio` (C200 acoustic, independent) when judging room energy."
         ),
     }
 
@@ -272,7 +303,7 @@ def cmd_agent_brief(args: argparse.Namespace) -> int:
         period=args.sample_period,
     )
     history = read_history_tail(runtime_dir, max_lines=args.history_lines)
-    brief = build_agent_brief(snapshots=snapshots, history=history, profiles_dir=profiles_dir)
+    brief = build_agent_brief(snapshots=snapshots, history=history, profiles_dir=profiles_dir, runtime_dir=runtime_dir)
     print(json.dumps(brief, indent=2, sort_keys=True))
     return 0
 
