@@ -263,20 +263,16 @@ class PersonSceneTracker:
         bottom_y = _clamp01(y2 / frame_h)
         # Webcam-only distance proxy: a person walking from across the room
         # to right at the camera should sweep distance from ~0.05 to ~0.95.
-        # Live test 2026-06-03: previous mapping (0.08 + 0.70*height/0.72 +
-        # 0.22*bottom_y) saturated too early — bbox grew from 30%->47% of
-        # frame as Pablo walked closer but distance only moved 0.60->0.76,
-        # then capped. Rebuilt around bbox AREA (height * width) with a
-        # wider mapping window so realistic walking distances cover the
-        # full CV range.
+        # Live test 6/3 round 5: original area 0.02..0.30 window was too
+        # wide — realistic "close" is area ~0.10-0.15, so distance was only
+        # reaching ~0.65 in practice. Tightened window to 0.02..0.12 so
+        # standing ~1m from the camera saturates near 0.95.
         # Reference points from the Anker C200 in Lisbon space:
-        #   far  (~4m): area ~ 0.04 of frame
-        #   mid  (~2m): area ~ 0.10 of frame
-        #   near (~1m): area ~ 0.20 of frame
-        #   close (~0.5m): area ~ 0.35+ of frame
-        # Map area 0.02..0.30 -> distance 0.05..0.95, gamma 0.7 for more
-        # resolution at the far end (where small bbox changes matter most).
-        area_norm = _clamp01((area - 0.02) / (0.30 - 0.02))
+        #   far  (~4m): area ~ 0.02-0.04
+        #   mid  (~2m): area ~ 0.06-0.08
+        #   near (~1m): area ~ 0.10-0.12 (saturation)
+        #   close (~0.5m): clipped at 0.95
+        area_norm = _clamp01((area - 0.02) / (0.12 - 0.02))
         distance = _clamp01(0.05 + 0.90 * (area_norm ** 0.7))
         return {
             "width": width,
@@ -524,7 +520,7 @@ class SceneServer:
             "const bar=(v,max)=>{const p=Math.max(0,Math.min(1,(v||0)/(max||1)));return `<span class=bar><i style=width:${(p*100).toFixed(0)}%></i></span>`};\n"
             "function row(lbl,val,max,note){return `<div><span class=lbl>${lbl}</span><b>${f(val)}</b>${max?bar(val,max):''}${note?' <span style=color:#888>'+note+'</span>':''}</div>`}\n"
             "let im=document.getElementById('s');\n"
-            "setInterval(()=>{ im.src='scene.jpg?t='+Date.now() }, 200);\n"
+            "setInterval(()=>{ im.src='scene.jpg?t='+Date.now() }, 100);\n"
             "async function poll(){\n"
             "  try{\n"
             "    const [s,r]=await Promise.all([\n"
@@ -809,7 +805,7 @@ class LisbonSwnMapper:
         # hear with VCA on exponential or LEVEL pot biased open. Widening
         # to 0.10..0.95 so the modulation is unambiguous on the rig — quiet
         # room should be perceptibly quieter than busy room.
-        mix_target = 0.10 + 0.85 * _clamp01(0.55 * brightness + 0.45 * activity)
+        mix_target = 0.00 + 1.00 * _clamp01(0.55 * brightness + 0.45 * activity)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
@@ -923,7 +919,7 @@ class HumanAwareSwnMapper:
         count = _clamp01(scene.count_norm)
         activity = _clamp01(scene.activity)
         presence = 0.65 * mean_distance + 0.20 * count + 0.15 * activity
-        mix_target = 0.10 + 0.85 * _clamp01(presence)
+        mix_target = 0.00 + 1.00 * _clamp01(presence)
         targets[MAIN_MIX_VCA_CV_INDEX] = self.max_cv * mix_target
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 
@@ -974,7 +970,7 @@ class HumanAwareSwnMapper:
             + 0.20 * count             # secondary: more bodies, slight boost
             + 0.15 * activity          # tertiary: motion swell
         )
-        mix_target = 0.10 + 0.85 * _clamp01(presence)
+        mix_target = 0.00 + 1.00 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,

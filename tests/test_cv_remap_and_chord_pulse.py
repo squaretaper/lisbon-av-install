@@ -53,8 +53,8 @@ def test_main_mix_vca_baseline_when_room_empty():
     for _ in range(80):
         cv = mapper.step_scene(_scene(), dt=0.05)
     # CV6 is index 5. Empty room: people=0, mean_d=0, activity=0 -> presence=0,
-    # mix_target = 0.10 * max_cv 0.30 = 0.030. Allow slew tolerance.
-    assert 0.020 <= cv[5] <= 0.045, f"empty mix should baseline near 0.030, got {cv[5]:.3f}"
+    # mix_target = 0.00 * max_cv = 0.00 (room goes silent when empty).
+    assert cv[5] <= 0.005, f"empty mix should be near silence, got {cv[5]:.3f}"
 
 
 def test_main_mix_vca_swells_with_presence():

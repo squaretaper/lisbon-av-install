@@ -87,13 +87,17 @@ def test_mapper_keeps_pitch_cv_safe_and_moves_global_params_with_camera_activity
 
 def test_person_scene_tracker_preserves_id_and_reports_distance_motion():
     tracker = PersonSceneTracker(max_missing=2)
+    # bboxes sized so neither saturates the area-based distance mapping
+    # (window is 0.02..0.12 of frame area, so target areas ~0.04..0.10).
+    # Frame 200x200 = 40000 px. Small box 32x40=1280 = 0.032 area (far).
+    # Larger box 48x60=2880 = 0.072 area (closer).
     first = tracker.update(
-        [PersonObservation(track_id=None, bbox_xyxy=(40, 30, 110, 160), confidence=0.9)],
+        [PersonObservation(track_id=None, bbox_xyxy=(40, 30, 72, 70), confidence=0.9)],
         frame_size=(200, 200),
         dt=0.2,
     )
     second = tracker.update(
-        [PersonObservation(track_id=None, bbox_xyxy=(54, 20, 146, 198), confidence=0.92)],
+        [PersonObservation(track_id=None, bbox_xyxy=(54, 20, 102, 80), confidence=0.92)],
         frame_size=(200, 200),
         dt=0.2,
     )
