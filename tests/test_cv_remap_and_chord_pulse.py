@@ -42,14 +42,19 @@ def test_cv_labels_match_new_routing():
 
 
 def test_main_mix_vca_baseline_when_room_empty():
-    """No people / no activity should leave the mix above silence (baseline 0.60 of max_cv)."""
+    """No people / no activity should leave the mix near the empty floor.
+
+    Live tuning 6/3: widened swing 0.10..0.95 of max_cv (was 0.60..0.90)
+    so the modulation is unambiguous on the hardware Quad VCA past the
+    LEVEL pot bias / exponential response curve.
+    """
     mapper = HumanAwareSwnMapper(max_cv=0.30, smoothing_hz=100.0)
     # Drive enough steps for the slew to converge.
     for _ in range(80):
         cv = mapper.step_scene(_scene(), dt=0.05)
-    # CV6 is index 5. Empty room -> presence ~= 0.075 (only mean_dist term contributes),
-    # mix_target ~= 0.6 + 0.30*0.075 = ~0.6225 of max_cv = ~0.187. Allow tolerance for slew.
-    assert 0.155 <= cv[5] <= 0.205, f"empty mix should baseline near 0.18, got {cv[5]:.3f}"
+    # CV6 is index 5. Empty room -> presence ~= 0.075 (only mean_dist term),
+    # mix_target ~= 0.10 + 0.85*0.075 = ~0.164 of max_cv = ~0.049. Allow slew tolerance.
+    assert 0.035 <= cv[5] <= 0.075, f"empty mix should baseline near 0.05, got {cv[5]:.3f}"
 
 
 def test_main_mix_vca_swells_with_presence():
@@ -87,8 +92,9 @@ def test_aggregate_mapper_uses_new_cv_semantics():
     mapper = LisbonSwnMapper(max_cv=0.30, smoothing_hz=100.0)
     for _ in range(40):
         cv = mapper.step(brightness=0.6, motion=0.4, centroid_x=0.5, centroid_y=0.5, dt=0.05)
-    # CV6 = main mix VCA, should be in the baseline band (0.6+0.3*mix*max_cv = ~0.21)
-    assert 0.16 <= cv[5] <= 0.25, f"aggregate mix VCA out of band: {cv[5]:.3f}"
+    # CV6 = main mix VCA. Aggregate mode mix_target = 0.10 + 0.85*0.495 = ~0.521,
+    # *max_cv 0.30 = ~0.156. Allow band.
+    assert 0.12 <= cv[5] <= 0.20, f"aggregate mix VCA out of band: {cv[5]:.3f}"
     # CV7 = glitch trigger, motion=0.4 should crack it open
     assert cv[6] > 0.0
 
