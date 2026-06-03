@@ -236,7 +236,16 @@ def test_cv7_is_a_smoothed_room_movement_gate_not_presence_or_spread():
     assert cv_moving[MOVEMENT_GATE_CV_INDEX] <= 0.18
 
 
-def test_still_frame_hold_decays_only_cv7_movement_gate_and_freezes_other_cvs():
+def test_still_frame_hold_decays_cv7_and_cv6_while_freezing_pitch_cvs():
+    """Stillness should still let CV6 (mix VCA) track presence and CV7
+    (glitch) decay, but freeze CV1-5 + CV8 to avoid detector jitter on
+    pitch and timbral controls.
+
+    Live tuning 6/3: original behavior froze CV6 too, making the mix
+    volume stuck whenever the room was quiet. Now CV6 stays live so a
+    person walking up to a quiet room still hears the volume swell.
+    """
+    from audio.lisbon_swn_camera_bridge import MAIN_MIX_VCA_CV_INDEX
     mapper = HumanAwareSwnMapper(max_cv=0.18, smoothing_hz=20.0)
     moving_room = _person_scene_for_test(movement=0.75, activity=0.75)
     quiet_room = _person_scene_for_test(movement=0.0, activity=0.0)
@@ -246,9 +255,14 @@ def test_still_frame_hold_decays_only_cv7_movement_gate_and_freezes_other_cvs():
 
     for index, (before, after) in enumerate(zip(hot, held)):
         if index == MOVEMENT_GATE_CV_INDEX:
+            # glitch decays
             assert after < before
             assert after <= 0.02
+        elif index == MAIN_MIX_VCA_CV_INDEX:
+            # mix VCA tracks presence — quiet room has no presence so it should drop too
+            assert after <= before
         else:
+            # pitch + timbral CVs frozen
             assert math.isclose(after, before, abs_tol=1e-9)
 
 

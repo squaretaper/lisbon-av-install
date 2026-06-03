@@ -58,6 +58,7 @@ CV_LABELS = [
 # Conceptually a "glitch trigger" — sparse, gated by people-movement, used as spice.
 GLITCH_TRIGGER_CV_INDEX = 6
 MOVEMENT_GATE_CV_INDEX = GLITCH_TRIGGER_CV_INDEX  # back-compat alias
+MAIN_MIX_VCA_CV_INDEX = 5  # cv6 -> Intellijel Quad VCA CV1
 
 # Per-channel slew rates (Hz, 1-pole exp). Higher = snappier reaction.
 # voices 1/2/3 stay glacial so V/oct doesn't pop; mix VCA + glitch react
@@ -895,11 +896,19 @@ class HumanAwareSwnMapper:
         return float(np.clip(self.max_cv * gate, 0.0, self.max_cv))
 
     def step_movement_gate_only(self, scene: PersonScene, current_values: Sequence[float], *, dt: float) -> list[float]:
-        """Update only CV7 toward the current room-movement gate target.
+        """Update CV7 (glitch) AND CV6 (mix VCA) during still-frame holds.
 
-        Used during still-frame holds: the existing SWN person CVs stay frozen to
-        avoid detector jitter, but the newly repatched O&C glitch gate can decay
-        smoothly back toward zero when the room stops moving.
+        Original design (early Lisbon): freeze all SWN voice CVs to avoid
+        detector jitter, only let CV7 decay back to zero when the room
+        settles. But CV6 (mix VCA) was added later and is bound to
+        presence/distance, not motion — a person walking up to a frozen
+        camera scene should still increase the mix volume. Live test 6/3:
+        operator observed CV6 stuck at 0.018 for 12s because every frame
+        was hitting this 'still' path.
+
+        Solution: still update CV6 from the live scene during stillness
+        holds. CV1-5 stay frozen (those are pitched/timbral). CV7 still
+        gets the glitch-gate target (decays smoothly).
         """
 
         if len(current_values) != len(CV_LABELS):
@@ -908,6 +917,14 @@ class HumanAwareSwnMapper:
             self._current = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene)
+        # CV6 main mix VCA — keep it responsive to presence during stillness,
+        # same math as the live path in step_scene.
+        mean_distance = _clamp01(scene.mean_distance)
+        count = _clamp01(scene.count_norm)
+        activity = _clamp01(scene.activity)
+        presence = 0.65 * mean_distance + 0.20 * count + 0.15 * activity
+        mix_target = 0.10 + 0.85 * _clamp01(presence)
+        targets[MAIN_MIX_VCA_CV_INDEX] = self.max_cv * mix_target
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 
     def step_scene(self, scene: PersonScene, *, dt: float) -> list[float]:
