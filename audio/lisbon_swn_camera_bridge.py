@@ -1504,10 +1504,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                             root = chord.get("root_semitones")
                             if voicing and isinstance(root, (int, float)):
                                 chord_label = f"{voicing}@{root:.0f}"
-                        write_image_atomic(
-                            preview_path,
-                            annotate_person_scene(img, scene, chord_label=chord_label, track_ages=track_ages),
-                        )
+                        annotated = annotate_person_scene(img, scene, chord_label=chord_label, track_ages=track_ages)
+                        # Downscale to 720p max width before save — cuts JPEG
+                        # bytes ~4x so browser at 10Hz polling sees fluid motion
+                        # over Tailscale instead of buffering 175KB frames.
+                        max_w = 1280
+                        if annotated.width > max_w:
+                            ratio = max_w / annotated.width
+                            annotated = annotated.resize(
+                                (max_w, int(annotated.height * ratio)),
+                                Image.BILINEAR,
+                            )
+                        write_image_atomic(preview_path, annotated, quality=75)
                         last_preview = now
                 else:
                     cv_values = aggregate_mapper.step(
