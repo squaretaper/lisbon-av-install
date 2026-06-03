@@ -326,7 +326,7 @@ def read_status(path: Path) -> dict[str, Any]:
 
 def status_age_ms(status: dict[str, Any], *, observed_at: float | None = None) -> int | None:
     timestamp = status.get("timestamp")
-    if not isinstance(timestamp, int | float):
+    if not isinstance(timestamp, (int, float)):
         return None
     now = time.time() if observed_at is None else observed_at
     return max(0, int(round((now - float(timestamp)) * 1000.0)))
