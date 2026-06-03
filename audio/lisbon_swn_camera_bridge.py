@@ -28,6 +28,18 @@ from typing import Any, Sequence
 import numpy as np
 from PIL import Image, ImageDraw
 
+# Chord palette helpers — used by the slow-loop profile poller to interpolate
+# between chords. Defensive import so the bridge still runs if the module
+# isn't available (e.g. older deployments).
+try:
+    from audio.chord_palette import interpolate_chord  # type: ignore
+except Exception:
+    try:
+        from chord_palette import interpolate_chord  # type: ignore
+    except Exception:
+        def interpolate_chord(from_chord, to_chord, *, elapsed_seconds):  # type: ignore
+            return to_chord
+
 
 CV_LABELS = [
     "cv1_voice1_1v_oct",
@@ -370,8 +382,18 @@ def observations_from_yolo_result(result: Any, *, min_confidence: float = 0.35) 
     return observations
 
 
-def annotate_person_scene(image: Image.Image, scene: PersonScene) -> Image.Image:
-    """Return an RGB preview image with tracked people and scene features overlaid."""
+def annotate_person_scene(
+    image: Image.Image,
+    scene: PersonScene,
+    *,
+    chord_label: str | None = None,
+    track_ages: dict[int, int] | None = None,
+) -> Image.Image:
+    """Return an RGB preview image with tracked people and scene features overlaid.
+
+    `chord_label` is rendered into the top status bar when present.
+    `track_ages` maps track id -> frame count, drawn next to the bbox label.
+    """
 
     annotated = image.convert("RGB").copy()
     draw = ImageDraw.Draw(annotated)
@@ -383,7 +405,10 @@ def annotate_person_scene(image: Image.Image, scene: PersonScene) -> Image.Image
         color = colors[idx % len(colors)]
         x1, y1, x2, y2 = [int(round(v)) for v in track.bbox_xyxy]
         draw.rectangle((x1, y1, x2, y2), outline=color, width=line_w)
-        label = f"id {track.id} {track.confidence:.2f} d{track.distance:.2f} v{track.movement:.2f}"
+        age_str = ""
+        if track_ages is not None and track.id in track_ages:
+            age_str = f" a{track_ages[track.id]}"
+        label = f"id {track.id}{age_str} {track.confidence:.2f} d{track.distance:.2f} v{track.movement:.2f}"
         text_box = draw.textbbox((x1, max(0, y1 - 14)), label)
         draw.rectangle(text_box, fill=(0, 0, 0))
         draw.text((x1, max(0, y1 - 14)), label, fill=color)
@@ -395,12 +420,98 @@ def annotate_person_scene(image: Image.Image, scene: PersonScene) -> Image.Image
         f"people {scene.people_count}  activity {scene.activity:.2f}  "
         f"near {scene.nearest_distance:.2f}  spread {scene.spread_x:.2f}"
     )
-    draw.rectangle((0, 0, min(width, 520), 22), fill=(0, 0, 0))
+    if chord_label:
+        summary = f"{summary}  chord {chord_label}"
+    bar_w = min(width, max(520, 9 * len(summary)))
+    draw.rectangle((0, 0, bar_w, 22), fill=(0, 0, 0))
     draw.text((6, 4), summary, fill=(255, 255, 255))
     centroid = (int(round(scene.centroid_x * width)), int(round(scene.centroid_y * height)))
     draw.line((centroid[0] - 9, centroid[1], centroid[0] + 9, centroid[1]), fill=(255, 255, 255), width=line_w)
     draw.line((centroid[0], centroid[1] - 9, centroid[0], centroid[1] + 9), fill=(255, 255, 255), width=line_w)
     return annotated
+
+
+class SceneServer:
+    """Tiny HTTP server that exposes the annotated scene preview JPG.
+
+    Two routes:
+      GET /          — minimal auto-refreshing HTML viewer
+      GET /scene.jpg — current preview frame (always returns latest available)
+
+    Runs in a daemon thread so the bridge main loop owns lifecycle. Designed
+    to live behind Tailscale serve (path-scoped HTTPS) — no auth here.
+    The server reads the configured preview file from disk on each request
+    so the main loop's atomic-write pattern remains the single source of truth.
+    """
+
+    def __init__(self, port: int, preview_path: Path, host: str = "127.0.0.1") -> None:
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        self.port = int(port)
+        self.host = host
+        self.preview_path = Path(preview_path)
+        path_ref = self.preview_path
+
+        HTML_PAGE = (
+            "<!doctype html>\n"
+            "<html><head><meta charset=\"utf-8\"><base href=\"./\"><title>lisbon scene</title>\n"
+            "<style>\n"
+            "  html,body{margin:0;background:#000;color:#ddd;font-family:ui-monospace,monospace}\n"
+            "  #wrap{display:flex;justify-content:center;align-items:center;height:100vh}\n"
+            "  img{max-width:100%;max-height:100vh;display:block}\n"
+            "  .tag{position:fixed;top:8px;right:12px;font-size:11px;opacity:.55}\n"
+            "</style></head>\n"
+            "<body><div id=\"wrap\"><img id=\"s\" src=\"scene.jpg\"></div>\n"
+            "<div class=\"tag\">scene refresh 5hz</div>\n"
+            "<script>\n"
+            "let im=document.getElementById('s');\n"
+            "setInterval(()=>{ im.src='scene.jpg?t='+Date.now(); }, 200);\n"
+            "</script>\n"
+            "</body></html>"
+        ).encode("utf-8")
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, fmt, *args):  # silence default access log
+                return
+
+            def do_GET(self):  # noqa: N802
+                if self.path == "/" or self.path.startswith("/?"):
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(HTML_PAGE)))
+                    self.end_headers()
+                    self.wfile.write(HTML_PAGE)
+                    return
+                if self.path.startswith("/scene.jpg"):
+                    try:
+                        data = path_ref.read_bytes()
+                    except FileNotFoundError:
+                        self.send_response(503)
+                        self.end_headers()
+                        return
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/jpeg")
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                self.send_response(404)
+                self.end_headers()
+
+        self._server = ThreadingHTTPServer((host, self.port), Handler)
+        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True, name="lisbon-scene-server")
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        try:
+            self._server.shutdown()
+            self._server.server_close()
+        except Exception:
+            pass
 
 
 class YoloByteTrackPersonDetector:
@@ -502,10 +613,33 @@ class LisbonSwnMapper:
         # from the root. The bridge's main loop pushes a resolved chord here
         # from the live heuristic profile. None = use hardcoded open_fifth.
         self._chord: dict | None = None
+        self._chord_previous: dict | None = None
+        self._chord_set_at: float = 0.0
+        self._chord_now = time.monotonic
 
     def set_chord(self, chord: dict | None) -> None:
-        """Receive a chord block resolved by audio.chord_palette.resolve_chord."""
+        """Receive a chord block resolved by audio.chord_palette.resolve_chord.
+
+        If the new chord differs from the current one (or current is None),
+        snapshot the existing chord and start a transition timer so the
+        bridge crossfades over chord.transition_seconds.
+        """
+        if chord is None:
+            self._chord = None
+            self._chord_previous = None
+            return
+        if self._chord is None or chord.get("voice_offsets") != self._chord.get("voice_offsets") or \
+                chord.get("root_semitones") != self._chord.get("root_semitones"):
+            self._chord_previous = self._chord
+            self._chord_set_at = self._chord_now()
         self._chord = chord
+
+    def _active_chord(self) -> dict | None:
+        """Return the currently-playing chord, blended if a transition is in flight."""
+        if self._chord is None:
+            return None
+        elapsed = self._chord_now() - self._chord_set_at
+        return interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
 
     def step(
         self,
@@ -531,10 +665,11 @@ class LisbonSwnMapper:
         # Chord layer: when the reflective reviewer has set a chord, use its
         # root + voice offsets. Otherwise fall back to the historical
         # [0, 7, 12] open-fifth so existing tests stay green.
-        if self._chord is not None:
-            root_semi = float(self._chord.get("root_semitones", 0.0)) - 36.0  # normalize to relative
-            voice_offsets = self._chord.get("voice_offsets", (0.0, 7.0, 12.0))
-            wander_scale = float(self._chord.get("pitch_wander_scale", 1.0))
+        active_chord = self._active_chord()
+        if active_chord is not None:
+            root_semi = float(active_chord.get("root_semitones", 0.0)) - 36.0  # normalize to relative
+            voice_offsets = active_chord.get("voice_offsets", (0.0, 7.0, 12.0))
+            wander_scale = float(active_chord.get("pitch_wander_scale", 1.0))
         else:
             root_semi = 0.0
             voice_offsets = (0.0, 7.0, 12.0)
@@ -573,10 +708,32 @@ class HumanAwareSwnMapper:
         # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
         # root. None = use the historical hardcoded open-fifth.
         self._chord: dict | None = None
+        self._chord_previous: dict | None = None
+        self._chord_set_at: float = 0.0
+        self._chord_now = time.monotonic
 
     def set_chord(self, chord: dict | None) -> None:
-        """Receive a chord block resolved by audio.chord_palette.resolve_chord."""
+        """Receive a chord block resolved by audio.chord_palette.resolve_chord.
+
+        Detects whether the new chord differs from the current one and, if
+        so, snapshots the prior chord and starts a transition timer so the
+        bridge crossfades over `chord.transition_seconds`.
+        """
+        if chord is None:
+            self._chord = None
+            self._chord_previous = None
+            return
+        if self._chord is None or chord.get("voice_offsets") != self._chord.get("voice_offsets") or \
+                chord.get("root_semitones") != self._chord.get("root_semitones"):
+            self._chord_previous = self._chord
+            self._chord_set_at = self._chord_now()
         self._chord = chord
+
+    def _active_chord(self) -> dict | None:
+        if self._chord is None:
+            return None
+        elapsed = self._chord_now() - self._chord_set_at
+        return interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
 
     def _movement_gate_target(self, scene: PersonScene) -> float:
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
@@ -620,10 +777,11 @@ class HumanAwareSwnMapper:
         # Chord layer: when the reflective reviewer has set a chord, use its
         # root + voice offsets. Otherwise fall back to historical open-fifth
         # so existing tests stay green.
-        if self._chord is not None:
-            root_semi = float(self._chord.get("root_semitones", 36.0)) - 36.0
-            voice_offsets = self._chord.get("voice_offsets", (0.0, 7.0, 12.0))
-            wander_scale = float(self._chord.get("pitch_wander_scale", 1.0))
+        active_chord = self._active_chord()
+        if active_chord is not None:
+            root_semi = float(active_chord.get("root_semitones", 36.0)) - 36.0
+            voice_offsets = active_chord.get("voice_offsets", (0.0, 7.0, 12.0))
+            wander_scale = float(active_chord.get("pitch_wander_scale", 1.0))
         else:
             root_semi = 0.0
             voice_offsets = (0.0, 7.0, 12.0)
@@ -859,6 +1017,7 @@ def status_dict(
     person_scene: PersonScene | None = None,
     audio_input: dict[str, Any] | None = None,
     preview_path: str | None = None,
+    chord: dict | None = None,
     error: str | None = None,
 ) -> dict:
     status = BridgeStatus(
@@ -880,6 +1039,19 @@ def status_dict(
         error=error,
     )
     data = asdict(status)
+    # Active chord (voicing name, root, voice offsets) surfaced for the
+    # reviewer agent + remote operator. Mirrors what the live mappers are
+    # actually using right now (post-transition-blend if mid-crossfade).
+    if chord is not None:
+        data["chord"] = {
+            "voicing": chord.get("voicing"),
+            "root_semitones": chord.get("root_semitones"),
+            "voice_offsets": list(chord.get("voice_offsets", ())) or None,
+            "smoothing_hz": chord.get("smoothing_hz"),
+            "pitch_wander_scale": chord.get("pitch_wander_scale"),
+            "transition_seconds": chord.get("transition_seconds"),
+            "transition_progress": chord.get("_transition_progress"),
+        }
     data["note"] = "CoreAudio outputs are 1-based here: ES-9 physical CV outs 1-8 = CoreAudio outs 9-16."
     return data
 
@@ -948,6 +1120,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--tracker-max-missing", type=int, default=16, help="frames a track survives without re-detection before being culled (default 16 = 8s at camera_hz=2)")
     p.add_argument("--tracker-match-threshold", type=float, default=0.24, help="centroid distance threshold for nearest-neighbor re-matching")
     p.add_argument("--preview-hz", type=float, default=2.0, help="annotated preview write rate in people mode; <=0 disables")
+    p.add_argument("--scene-port", type=int, default=8768, help="HTTP port to serve the annotated scene preview (0 disables)")
+    p.add_argument("--scene-host", default="127.0.0.1", help="interface to bind the scene server (default 127.0.0.1, exposed via Tailscale serve)")
     return p
 
 
@@ -1037,6 +1211,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         last_preview = 0.0
         interval = 1.0 / max(0.1, args.camera_hz)
         preview_interval = 1.0 / max(0.1, args.preview_hz) if preview_path is not None else float("inf")
+        # Per-track frame counter — how many frames a given id has been
+        # continuously seen. Used by annotate_person_scene to surface "age"
+        # in the preview overlay so the operator can see track stability.
+        track_ages: dict[int, int] = {}
         while not stop.is_set():
             now = time.monotonic()
             dt = max(0.0, now - last)
@@ -1050,6 +1228,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                         detector = YoloByteTrackPersonDetector(args.yolo_model, confidence=args.yolo_conf, tracker=args.yolo_tracker)
                     observations = detector.detect(img)
                     scene = person_tracker.update(observations, frame_size=img.size, dt=dt)
+                    # Update track age counters: increment seen ids, drop ones that disappeared.
+                    seen_ids = {t.id for t in scene.tracks}
+                    for tid in list(track_ages.keys()):
+                        if tid not in seen_ids:
+                            del track_ages[tid]
+                    for tid in seen_ids:
+                        track_ages[tid] = track_ages.get(tid, 0) + 1
                     if hold_person_cv_for_still_frame(features, scene, frame_motion_threshold=args.stillness_frame_motion):
                         scene = quiet_person_scene(scene)
                         with lock:
@@ -1058,7 +1243,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                     else:
                         cv_values = human_mapper.step_scene(scene, dt=dt)
                     if preview_path is not None and now - last_preview >= preview_interval:
-                        write_image_atomic(preview_path, annotate_person_scene(img, scene))
+                        chord_label = None
+                        chord = profile_state.get("chord")
+                        if isinstance(chord, dict):
+                            voicing = chord.get("voicing")
+                            root = chord.get("root_semitones")
+                            if voicing and isinstance(root, (int, float)):
+                                chord_label = f"{voicing}@{root:.0f}"
+                        write_image_atomic(
+                            preview_path,
+                            annotate_person_scene(img, scene, chord_label=chord_label, track_ages=track_ages),
+                        )
                         last_preview = now
                 else:
                     cv_values = aggregate_mapper.step(
@@ -1081,6 +1276,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     def snapshot_status() -> dict[str, Any]:
         with lock:
+            # Surface the active (post-transition-blend) chord from whichever
+            # mapper is actually driving CV. This gives the reviewer agent
+            # and the /scene/ overlay the truth on the wire.
+            mapper = human_mapper if args.vision_mode == "people" else aggregate_mapper
+            active_chord = mapper._active_chord()
             return status_dict(
                 ok=state["error"] is None,
                 device=args.device,
@@ -1095,6 +1295,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 person_scene=state["person_scene"],
                 audio_input=state["audio_input"],
                 preview_path=str(preview_path) if preview_path is not None else None,
+                chord=active_chord,
                 error=state["error"],
             )
 
@@ -1111,12 +1312,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     status_thread.start()
     profile_thread.start()
 
+    # Optional: start the HTTP scene preview server when a preview file is
+    # being written and the operator hasn't disabled the port. Designed to
+    # land behind Tailscale serve at /scene/ for remote operator monitoring.
+    scene_server: SceneServer | None = None
+    if preview_path is not None and args.scene_port > 0:
+        try:
+            scene_server = SceneServer(args.scene_port, preview_path, host=args.scene_host)
+            scene_server.start()
+        except OSError as exc:
+            print(f"  scene server: failed to bind {args.scene_host}:{args.scene_port} ({exc})")
+            scene_server = None
+
     print("Lisbon SWN camera soundscape")
     print(f"  camera: {args.camera_url}")
     print(f"  status: {status_path}")
     print(f"  vision: {args.vision_mode}")
     if preview_path is not None:
         print(f"  preview: {preview_path}")
+    if scene_server is not None:
+        print(f"  scene server: http://{args.scene_host}:{args.scene_port}/  (path-scope behind Tailscale serve at /scene/)")
     print(f"  input pair: ES-9/CoreAudio inputs {input_channels[0]}/{input_channels[1]} -> main outputs 1/2 + analysis")
     print("  routing: USB/CoreAudio outputs 1/2 -> ES-9 main mix path; physical CV outs 1-8 -> CoreAudio outs 9-16")
     print("  CV map:")
@@ -1130,6 +1345,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         stop.set()
         camera_thread.join(timeout=2.0)
         status_thread.join(timeout=2.0)
+        if scene_server is not None:
+            scene_server.stop()
         return 0
 
     import sounddevice as sd
@@ -1169,6 +1386,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     stop.set()
     camera_thread.join(timeout=2.0)
     status_thread.join(timeout=2.0)
+    if scene_server is not None:
+        scene_server.stop()
     final = snapshot_status()
     write_json_atomic(status_path, final)
     return 0

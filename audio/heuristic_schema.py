@@ -51,6 +51,11 @@ BOUNDS: dict[str, tuple[float, float]] = {
     "chord.voice_3_semitones": (-12.0, 24.0),
     "chord.smoothing_hz": (0.05, 4.0),
     "chord.pitch_wander_scale": (0.0, 2.0),
+    # Chord transition — when reviewer writes a new chord, the bridge
+    # crossfades from the previous voice offsets to the new ones over
+    # this many seconds using smoothstep easing. 0 = instant snap (the
+    # old behavior), 30 = slow musical modulation, 120 = barely audible.
+    "chord.transition_seconds": (0.0, 300.0),
 }
 
 ALLOWED_MODE_BIAS = {
