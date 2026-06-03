@@ -770,10 +770,14 @@ class LisbonSwnMapper:
             wander_scale = 1.0
         pitch_wander = ((centroid_x - 0.5) * (0.9 * semitone) + motion * (0.5 * semitone)) * wander_scale
 
-        # CV6 -> Intellijel Quad VCA CV1 (normalled to VCAs 2-4). Single CV
+        # CV6 -> Intellijel Quad VCA CV1 (normalled to VCA2/3/4). Single CV
         # controls both main mix channels. In aggregate (no-people) mode we
         # ride brightness + activity for a slow swell.
-        mix_target = 0.60 + 0.30 * _clamp01(0.55 * brightness + 0.45 * activity)
+        # Live test 2026-06-03: original 0.60..0.90 swing was too narrow to
+        # hear with VCA on exponential or LEVEL pot biased open. Widening
+        # to 0.10..0.95 so the modulation is unambiguous on the rig — quiet
+        # room should be perceptibly quieter than busy room.
+        mix_target = 0.10 + 0.85 * _clamp01(0.55 * brightness + 0.45 * activity)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
@@ -907,13 +911,14 @@ class HumanAwareSwnMapper:
             pitch_wander += id_signature * semitone * wander_scale
 
         # CV6 -> Intellijel Quad VCA CV1 (normalled to VCA2/3/4). Controls
-        # main mix L/R volume from a single CV. We keep the room audible at
-        # all times (baseline ~0.60 of max_cv) but let presence push it up
-        # and quiet sparse moments pull it down. Glacial response — the
-        # _slew_targets pass below smooths sudden jumps; here we set the
-        # target, not the trajectory.
+        # main mix L/R volume from a single CV. Live test 2026-06-03: the
+        # original 0.60..0.90 baseline swing was too narrow to hear past
+        # the VCA's manual LEVEL bias / exponential curve. Widened to
+        # 0.10..0.95 so quiet/empty rooms are unambiguously quieter than
+        # busy/close rooms. The hardware LEVEL pots can still bias the
+        # absolute floor up if you want a guaranteed minimum signal.
         presence = 0.55 * count + 0.30 * activity + 0.15 * (1.0 - max(0.0, mean_distance - 0.3))
-        mix_target = 0.60 + 0.30 * _clamp01(presence)
+        mix_target = 0.10 + 0.85 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,
