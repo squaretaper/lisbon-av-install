@@ -942,13 +942,21 @@ class HumanAwareSwnMapper:
             pitch_wander += id_signature * semitone * wander_scale
 
         # CV6 -> Intellijel Quad VCA CV1 (normalled to VCA2/3/4). Controls
-        # main mix L/R volume from a single CV. Live test 2026-06-03: the
-        # original 0.60..0.90 baseline swing was too narrow to hear past
-        # the VCA's manual LEVEL bias / exponential curve. Widened to
-        # 0.10..0.95 so quiet/empty rooms are unambiguously quieter than
-        # busy/close rooms. The hardware LEVEL pots can still bias the
-        # absolute floor up if you want a guaranteed minimum signal.
-        presence = 0.55 * count + 0.30 * activity + 0.15 * (1.0 - max(0.0, mean_distance - 0.3))
+        # main mix L/R volume from a single CV. Live tuning 6/3 round 2:
+        # operator reports cv6 frozen at one value despite walking around.
+        # Root cause: previous presence math saturated the distance term
+        # at mean_d < 0.3 so far-end movement had zero effect on the mix.
+        # Rebuilt around mean_distance as the primary driver — distance IS
+        # presence in a webcam install — with count and activity layered on
+        # top as smaller modulations.
+        #   distance dominant: closer person -> louder mix
+        #   count secondary: more people -> slight boost
+        #   activity tertiary: motion -> tiny swell
+        presence = (
+            0.65 * mean_distance       # primary: closeness drives loudness
+            + 0.20 * count             # secondary: more bodies, slight boost
+            + 0.15 * activity          # tertiary: motion swell
+        )
         mix_target = 0.10 + 0.85 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
