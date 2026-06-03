@@ -75,7 +75,7 @@ PER_CV_SMOOTHING_HZ = [
     6.0,    # cv3 voice3 1v/oct
     10.0,   # cv4 wavetable browse
     10.0,   # cv5 dispersion
-    1.2,    # cv6 main mix VCA   — very slow (~830ms tau) to wash YOLO + scene jitter
+    6.0,    # cv6 main mix VCA   — CV-side slew (input is already low-passed)
     24.0,   # cv7 glitch trigger — fastest, gates pink noise
     10.0,   # cv8 depth
 ]
@@ -836,6 +836,16 @@ class HumanAwareSwnMapper:
             raise ValueError("max_cv should be in normalized ES-9 units, usually 0.05..0.30")
         self.max_cv = float(max_cv)
         self.smoothing_hz = float(smoothing_hz)
+        # Input-side smoothing on presence (0..1) to absorb YOLO detection
+        # dropouts. Without this, mean_distance toggles 0.60 <-> 0.00 several
+        # times per second when YOLO loses+reacquires a track. Slewing the
+        # *output* CV can't fix that — by the time CV6 reaches one value
+        # the input has snapped to the other. We low-pass the presence
+        # input itself before it touches CV.
+        # Live tuning 6/3 round 9: 0.6Hz (~265ms tau) preserves walk
+        # responsiveness while making 1-2 frame detection gaps invisible.
+        self._presence_state: float = 0.0
+        self._presence_smoothing_hz: float = 0.6
         self._current: list[float] | None = None
         # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
         # root. None = use the historical hardcoded open-fifth.
@@ -879,6 +889,21 @@ class HumanAwareSwnMapper:
         drift_phase = self._chord_now() - self._drift_start
         return apply_chord_drift(blended, drift_phase_seconds=drift_phase)
 
+    def _filter_presence(self, raw_presence: float, dt: float) -> float:
+        """One-pole low-pass on raw presence to absorb YOLO detection
+        dropouts before they reach CV6. The CV-side slew is separate and
+        handles short-timescale jitter; this filter handles the longer
+        2-3 frame detection gaps.
+        """
+        raw = float(np.clip(raw_presence, 0.0, 1.0))
+        if dt <= 0.0:
+            alpha = 1.0
+        else:
+            alpha = 1.0 - math.exp(-self._presence_smoothing_hz * dt)
+        alpha = float(np.clip(alpha, 0.0, 1.0))
+        self._presence_state = self._presence_state + (raw - self._presence_state) * alpha
+        return float(np.clip(self._presence_state, 0.0, 1.0))
+
     def _movement_gate_target(self, scene: PersonScene) -> float:
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
         if movement <= 0.005:
@@ -916,11 +941,13 @@ class HumanAwareSwnMapper:
         targets = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene)
         # CV6 main mix VCA — keep it responsive to presence during stillness,
-        # same math as the live path in step_scene.
+        # same math as the live path in step_scene. Presence filtered through
+        # the one-pole low-pass to absorb YOLO detection dropouts.
         mean_distance = _clamp01(scene.mean_distance)
         count = _clamp01(scene.count_norm)
         activity = _clamp01(scene.activity)
-        presence = 0.65 * mean_distance + 0.20 * count + 0.15 * activity
+        raw_presence = 0.65 * mean_distance + 0.20 * count + 0.15 * activity
+        presence = self._filter_presence(raw_presence, dt)
         mix_target = 0.00 + 1.00 * _clamp01(presence)
         targets[MAIN_MIX_VCA_CV_INDEX] = self.max_cv * mix_target
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
@@ -967,11 +994,18 @@ class HumanAwareSwnMapper:
         #   distance dominant: closer person -> louder mix
         #   count secondary: more people -> slight boost
         #   activity tertiary: motion -> tiny swell
-        presence = (
+        # Live tuning 6/3: presence math + input-side low-pass filter to
+        # absorb YOLO detection dropouts so CV6 doesn't whip 0..0.6..0
+        # when a track is briefly lost.
+        #   distance dominant: closer person -> louder mix
+        #   count secondary: more people -> slight boost
+        #   activity tertiary: motion swell
+        raw_presence = (
             0.65 * mean_distance       # primary: closeness drives loudness
             + 0.20 * count             # secondary: more bodies, slight boost
             + 0.15 * activity          # tertiary: motion swell
         )
+        presence = self._filter_presence(raw_presence, dt)
         mix_target = 0.00 + 1.00 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
