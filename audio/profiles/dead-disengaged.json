@@ -1,0 +1,35 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "profile_id": "seed-dead-disengaged",
+  "family": "wake",
+  "source": "seed",
+  "reason": "People present but no perceivable connection between their movement and the system. Increase camera sensitivity, raise cv response, allow brighter peaks on motion. A gentle attempt to make the room feel listened to without panicking the patch.",
+  "mode_bias": "wake",
+  "scene": {
+    "silence_hold_seconds": 6,
+    "density_target": 0.55,
+    "avoid_repetition_seconds": 50
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.65,
+    "stillness_deadband_scale": 0.9,
+    "sector_activity_weight": 0.6
+  },
+  "audio": {
+    "drone_bias": 0.4,
+    "glitch_probability": 0.14,
+    "high_band_strobe_threshold_scale": 1.0,
+    "feedback_suppression": 0.7
+  },
+  "lights": {
+    "brightness_ceiling": 180,
+    "black_floor_bias": 0.25,
+    "strobe_ceiling": 225,
+    "packet_complexity": 0.7
+  },
+  "cv": {
+    "max_cv_scale": 1.0,
+    "movement_gate_ceiling_v": 4.6,
+    "pitch_drift_scale": 0.55
+  }
+}

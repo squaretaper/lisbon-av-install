@@ -1,0 +1,35 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "profile_id": "seed-stuck-overactive",
+  "family": "corrective",
+  "source": "seed",
+  "reason": "System has been wobbling without perceptual cause: drone-derivative artifacts triggering glitch, audio busy while room is still. Reduce glitch probability, tighten movement gate, suppress feedback, dim brightness slightly.",
+  "mode_bias": "settle",
+  "scene": {
+    "silence_hold_seconds": 14,
+    "density_target": 0.35,
+    "avoid_repetition_seconds": 80
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.35,
+    "stillness_deadband_scale": 1.3,
+    "sector_activity_weight": 0.55
+  },
+  "audio": {
+    "drone_bias": 0.55,
+    "glitch_probability": 0.03,
+    "high_band_strobe_threshold_scale": 1.25,
+    "feedback_suppression": 0.92
+  },
+  "lights": {
+    "brightness_ceiling": 130,
+    "black_floor_bias": 0.5,
+    "strobe_ceiling": 190,
+    "packet_complexity": 0.4
+  },
+  "cv": {
+    "max_cv_scale": 0.85,
+    "movement_gate_ceiling_v": 3.8,
+    "pitch_drift_scale": 0.3
+  }
+}

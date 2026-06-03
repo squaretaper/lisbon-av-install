@@ -1,0 +1,35 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "profile_id": "seed-busy-active-room",
+  "family": "dense",
+  "source": "seed",
+  "reason": "Many people, sustained movement, multiple sectors active. Lift density, allow glitches, raise brightness ceiling, shorten silence holds. Avoid strobe ceiling overshoot.",
+  "mode_bias": "dense_response",
+  "scene": {
+    "silence_hold_seconds": 4,
+    "density_target": 0.72,
+    "avoid_repetition_seconds": 40
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.6,
+    "stillness_deadband_scale": 0.85,
+    "sector_activity_weight": 0.4
+  },
+  "audio": {
+    "drone_bias": 0.32,
+    "glitch_probability": 0.22,
+    "high_band_strobe_threshold_scale": 0.9,
+    "feedback_suppression": 0.6
+  },
+  "lights": {
+    "brightness_ceiling": 200,
+    "black_floor_bias": 0.18,
+    "strobe_ceiling": 235,
+    "packet_complexity": 0.78
+  },
+  "cv": {
+    "max_cv_scale": 1.0,
+    "movement_gate_ceiling_v": 4.8,
+    "pitch_drift_scale": 0.6
+  }
+}

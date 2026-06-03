@@ -1,0 +1,35 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "profile_id": "seed-sparse-still-room",
+  "family": "sparse",
+  "source": "seed",
+  "reason": "Few people, low movement, long stillness. Preserve sparse drone, low glitch probability, hold silence longer, keep lights deep in black floor. Reward real movement when it happens.",
+  "mode_bias": "sparse_drone",
+  "scene": {
+    "silence_hold_seconds": 22,
+    "density_target": 0.22,
+    "avoid_repetition_seconds": 110
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.4,
+    "stillness_deadband_scale": 1.2,
+    "sector_activity_weight": 0.7
+  },
+  "audio": {
+    "drone_bias": 0.62,
+    "glitch_probability": 0.04,
+    "high_band_strobe_threshold_scale": 1.15,
+    "feedback_suppression": 0.85
+  },
+  "lights": {
+    "brightness_ceiling": 140,
+    "black_floor_bias": 0.6,
+    "strobe_ceiling": 180,
+    "packet_complexity": 0.45
+  },
+  "cv": {
+    "max_cv_scale": 0.9,
+    "movement_gate_ceiling_v": 4.0,
+    "pitch_drift_scale": 0.4
+  }
+}
