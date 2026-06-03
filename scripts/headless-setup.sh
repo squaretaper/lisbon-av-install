@@ -99,8 +99,17 @@ else
   # the user keychain to be unlocked (i.e. operator is logged in).
   if ! PW="$(security find-generic-password -wa "$VENUE_SSID" 2>/dev/null)"; then
     echo "FATAL: could not read $VENUE_SSID password from any unlocked keychain." >&2
-    echo "       Log in as $INSTALL_USER on the console, ensure $VENUE_SSID has" >&2
-    echo "       been joined at least once, then re-run." >&2
+    echo "       The login keychain is probably locked (common when SSHing in" >&2
+    echo "       via Tailscale rather than sitting at the console)." >&2
+    echo "" >&2
+    echo "       Fix A: unlock the login keychain, then re-run this script:" >&2
+    echo "         security unlock-keychain ~/Library/Keychains/login.keychain-db" >&2
+    echo "" >&2
+    echo "       Fix B: paste the password directly into the System keychain:" >&2
+    echo "         sudo security add-generic-password \\" >&2
+    echo "           -a $VENUE_SSID -s AirPort \\" >&2
+    echo "           -w 'PASSWORD_HERE' -A \\" >&2
+    echo "           /Library/Keychains/System.keychain" >&2
     exit 3
   fi
   if [[ -z "$PW" ]]; then
