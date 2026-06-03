@@ -88,15 +88,32 @@ echo
 
 # --- 3. Wi-Fi credential placement ----------------------------------------
 echo "--- Wi-Fi credential ($VENUE_SSID) ---"
+SYSTEM_KEYCHAIN="/Library/Keychains/System.keychain"
+if sudo security find-generic-password -a "$VENUE_SSID" -s AirPort "$SYSTEM_KEYCHAIN" >/dev/null 2>&1; then
+  IN_SYSTEM=1
+else
+  IN_SYSTEM=0
+fi
 KEYCHAIN_LINE="$(security find-generic-password -l "$VENUE_SSID" 2>&1 | head -1 || true)"
-echo "current keychain         = $KEYCHAIN_LINE"
+echo "current keychain (default search) = $KEYCHAIN_LINE"
+echo "present in System.keychain        = $IN_SYSTEM"
 
-if [[ "$KEYCHAIN_LINE" == *"/Library/Keychains/System.keychain"* ]]; then
-  echo "ok: $VENUE_SSID password already lives in the System keychain"
+if [[ "$IN_SYSTEM" == "1" ]]; then
+  # Verify it has a non-empty password — earlier attempts in this repo
+  # accidentally created empty entries that look fine to listings.
+  PW_LEN="$(sudo security find-generic-password -wa "$VENUE_SSID" "$SYSTEM_KEYCHAIN" 2>/dev/null | wc -c | tr -d ' ')"
+  if [[ "${PW_LEN:-0}" -ge 2 ]]; then
+    echo "ok: $VENUE_SSID password already lives in the System keychain (len=$PW_LEN)"
+  else
+    echo "WARN: $VENUE_SSID entry exists in System.keychain but password is empty."
+    echo "      Delete and re-add manually:"
+    echo "        sudo security delete-generic-password -a $VENUE_SSID -s AirPort $SYSTEM_KEYCHAIN"
+    echo "        read -s \"MS?$VENUE_SSID password: \" && echo"
+    echo "        sudo security add-generic-password -a $VENUE_SSID -s AirPort -A -w \"\$MS\" $SYSTEM_KEYCHAIN"
+    echo "        unset MS"
+  fi
 else
   echo "moving $VENUE_SSID password into the System keychain..."
-  # Read the password from whichever keychain currently holds it. Requires
-  # the user keychain to be unlocked (i.e. operator is logged in).
   if ! PW="$(security find-generic-password -wa "$VENUE_SSID" 2>/dev/null)"; then
     echo "FATAL: could not read $VENUE_SSID password from any unlocked keychain." >&2
     echo "       The login keychain is probably locked (common when SSHing in" >&2
