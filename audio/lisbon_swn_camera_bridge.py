@@ -59,6 +59,22 @@ CV_LABELS = [
 GLITCH_TRIGGER_CV_INDEX = 6
 MOVEMENT_GATE_CV_INDEX = GLITCH_TRIGGER_CV_INDEX  # back-compat alias
 
+# Per-channel slew rates (Hz, 1-pole exp). Higher = snappier reaction.
+# voices 1/2/3 stay glacial so V/oct doesn't pop; mix VCA + glitch react
+# fast so movement feels responsive; timbral controls in between.
+# Live tuning 2026-06-03: operator reported volume control feels laggy
+# and distance doesn't track presence. Boosted mix VCA + glitch.
+PER_CV_SMOOTHING_HZ = [
+    6.0,    # cv1 voice1 1v/oct  — chord pitch, slow
+    6.0,    # cv2 voice2 1v/oct
+    6.0,    # cv3 voice3 1v/oct
+    10.0,   # cv4 wavetable browse
+    10.0,   # cv5 dispersion
+    18.0,   # cv6 main mix VCA   — fast, tracks presence
+    24.0,   # cv7 glitch trigger — fastest, gates pink noise
+    10.0,   # cv8 depth
+]
+
 
 @dataclass(frozen=True)
 class CameraFeatures:
@@ -244,8 +260,23 @@ class PersonSceneTracker:
         center_x = _clamp01(((x1 + x2) * 0.5) / frame_w)
         center_y = _clamp01(((y1 + y2) * 0.5) / frame_h)
         bottom_y = _clamp01(y2 / frame_h)
-        # Webcam-only distance proxy: tall boxes near the bottom of the frame are closer.
-        distance = _clamp01(0.08 + 0.70 * _clamp01(height / 0.72) + 0.22 * bottom_y)
+        # Webcam-only distance proxy: a person walking from across the room
+        # to right at the camera should sweep distance from ~0.05 to ~0.95.
+        # Live test 2026-06-03: previous mapping (0.08 + 0.70*height/0.72 +
+        # 0.22*bottom_y) saturated too early — bbox grew from 30%->47% of
+        # frame as Pablo walked closer but distance only moved 0.60->0.76,
+        # then capped. Rebuilt around bbox AREA (height * width) with a
+        # wider mapping window so realistic walking distances cover the
+        # full CV range.
+        # Reference points from the Anker C200 in Lisbon space:
+        #   far  (~4m): area ~ 0.04 of frame
+        #   mid  (~2m): area ~ 0.10 of frame
+        #   near (~1m): area ~ 0.20 of frame
+        #   close (~0.5m): area ~ 0.35+ of frame
+        # Map area 0.02..0.30 -> distance 0.05..0.95, gamma 0.7 for more
+        # resolution at the far end (where small bbox changes matter most).
+        area_norm = _clamp01((area - 0.02) / (0.30 - 0.02))
+        distance = _clamp01(0.05 + 0.90 * (area_norm ** 0.7))
         return {
             "width": width,
             "height": height,
@@ -788,7 +819,7 @@ class LisbonSwnMapper:
             0.0 if motion <= 0.005 else self.max_cv * (_clamp01(motion * 2.6) ** 0.55),  # CV7 glitch trigger (sensitivity tuned 6/3)
             0.035 + 0.190 * activity,  # depth
         ]
-        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt)
+        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 
 
 class HumanAwareSwnMapper:
@@ -877,7 +908,7 @@ class HumanAwareSwnMapper:
             self._current = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene)
-        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt)
+        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 
     def step_scene(self, scene: PersonScene, *, dt: float) -> list[float]:
         dt = max(0.0, float(dt))
@@ -929,7 +960,7 @@ class HumanAwareSwnMapper:
             self._movement_gate_target(scene),
             0.025 + 0.185 * (0.68 * nearest + 0.22 * activity + 0.10 * movement),
         ]
-        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt)
+        return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 
 
 def physical_cv_to_coreaudio_channel(physical_cv_output: int) -> int:
@@ -1210,15 +1241,34 @@ def _slew_targets(
     max_cv: float,
     smoothing_hz: float,
     dt: float,
+    per_channel_smoothing_hz: Sequence[float] | None = None,
 ) -> list[float]:
+    """Exponential one-pole slew toward each target.
+
+    smoothing_hz is the default 1-pole cutoff applied to every channel.
+    per_channel_smoothing_hz, when provided, overrides per index — letting
+    fast-reactive controls (mix VCA, glitch gate) track scene changes
+    quickly while chord voices stay glacial. Length must match targets.
+    """
     clipped = [float(np.clip(v, 0.0, max_cv)) for v in targets]
     current = getattr(owner, current_attr)
     if current is None:
         setattr(owner, current_attr, clipped)
     else:
-        alpha = 1.0 if dt <= 0.0 else 1.0 - math.exp(float(-smoothing_hz) * dt)
-        alpha = float(np.clip(alpha, 0.0, 1.0))
-        setattr(owner, current_attr, [old + (new - old) * alpha for old, new in zip(current, clipped)])
+        rates: Sequence[float]
+        if per_channel_smoothing_hz is not None and len(per_channel_smoothing_hz) == len(clipped):
+            rates = per_channel_smoothing_hz
+        else:
+            rates = [smoothing_hz] * len(clipped)
+        new_state: list[float] = []
+        for old, new, hz in zip(current, clipped, rates):
+            if dt <= 0.0:
+                alpha = 1.0
+            else:
+                alpha = 1.0 - math.exp(float(-hz) * dt)
+            alpha = float(np.clip(alpha, 0.0, 1.0))
+            new_state.append(old + (new - old) * alpha)
+        setattr(owner, current_attr, new_state)
     return [float(np.clip(v, 0.0, max_cv)) for v in getattr(owner, current_attr)]
 
 
