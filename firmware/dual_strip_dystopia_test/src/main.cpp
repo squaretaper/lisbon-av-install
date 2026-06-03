@@ -8,6 +8,13 @@
 //   Color order proven on J1 bench test: BRG
 //   Status LED: GPIO27 -> R3 220R -> LED -> GND
 //   Case light-pipe LEDs: bottom->top GPIO13, GPIO14, GPIO32, GPIO33
+//
+// HARDWARE NOTE — AHCT125 mortality:
+//   Do NOT hot-plug J1/J2 strip cables. WS2811 DI clamp diodes back-inject
+//   into the buffer output and kill U1. Power down the 12V strip rail first.
+//   2026-05-31: lost one U1 hot-plugging the J2 universe (Joshua). Replaced.
+//   Future board rev: add TVS (SMAJ5.0A) + Schottky (BAT54) on each buffer
+//   output for hot-plug tolerance.
 
 static constexpr uint8_t J1_DATA_PIN = 25;
 static constexpr uint8_t J2_DATA_PIN = 26;
@@ -15,9 +22,12 @@ static constexpr uint8_t STATUS_LED_PIN = 27;
 static constexpr uint8_t LIGHT_PIPE_PINS[] = {13, 14, 32, 33};
 
 // BTF WS2811 12V 30 LED/m x 5m is typically 3 physical LEDs per addressable IC:
-// 150 physical LEDs / 3 = 50 logical WS2811 pixels. If a future strip is individually
-// addressable, raise this to 150. Extra pixels beyond a shorter strip are simply ignored.
-static constexpr uint16_t NUM_LEDS = 50;
+// Each universe: 3 chained strips x 2m x 30 px/m, nominal 180 physical = 60
+// logical WS2811 pixels. In practice each 2m strip ships with 21 ICs (one
+// extra at the end), so the chain is 63 logical, not 60. Tail goes dark if
+// this is undercounted: 3 logical pixels per strip = 9 physical LEDs.
+// Hardware count wins over arithmetic. Verified with Joshua 2026-06-03.
+static constexpr uint16_t NUM_LEDS = 63;
 
 // Bench-safe default. Pure red only: no amber/white accents in the installed strips.
 static uint8_t gBrightness = 64;  // 25% of FastLED max; not full-bright.
@@ -169,9 +179,9 @@ void redPacket(CRGB* strip, int head, int direction, uint8_t peak) {
   }
 }
 
-uint8_t wrappedDistance(uint8_t a, uint8_t b) {
-  uint8_t direct = a > b ? a - b : b - a;
-  return min<uint8_t>(direct, NUM_LEDS - direct);
+uint16_t wrappedDistance(uint16_t a, uint16_t b) {
+  uint16_t direct = a > b ? a - b : b - a;
+  return min<uint16_t>(direct, NUM_LEDS - direct);
 }
 
 void chasePattern(uint32_t t) {
@@ -195,10 +205,10 @@ void chasePattern(uint32_t t) {
   uint32_t phaseA = t / stepMs;
   uint32_t phaseB = t / (stepMs + 9 + span / 3);
   uint32_t phaseC = t / (stepMs + 17 + span / 2);
-  uint8_t p1 = phaseA % NUM_LEDS;
-  uint8_t p2 = (NUM_LEDS + span - 1 - (phaseB % NUM_LEDS)) % NUM_LEDS;
-  uint8_t p3 = (phaseA / 2 + halfSpan) % NUM_LEDS;
-  uint8_t p4 = (NUM_LEDS + NUM_LEDS / 2 + span / 3 - (phaseC % NUM_LEDS)) % NUM_LEDS;
+  uint16_t p1 = phaseA % NUM_LEDS;
+  uint16_t p2 = (NUM_LEDS + span - 1 - (phaseB % NUM_LEDS)) % NUM_LEDS;
+  uint16_t p3 = (phaseA / 2 + halfSpan) % NUM_LEDS;
+  uint16_t p4 = (NUM_LEDS + NUM_LEDS / 2 + span / 3 - (phaseC % NUM_LEDS)) % NUM_LEDS;
 
   uint8_t pulsePeriod = 11 + stepMs / 12;
   uint8_t ghostPeriod = 17 + span / 2;
@@ -225,13 +235,13 @@ void chasePattern(uint32_t t) {
   }
 
   uint8_t collisionWindow = 3 + span / 14;
-  uint8_t collisionA = wrappedDistance(p1, p2);
-  uint8_t collisionB = wrappedDistance((NUM_LEDS - 1 - p1) % NUM_LEDS, p3);
+  uint16_t collisionA = wrappedDistance(p1, p2);
+  uint16_t collisionB = wrappedDistance((uint16_t)((NUM_LEDS - 1 - p1) % NUM_LEDS), p3);
   uint32_t collisionPeriod = 1180 + static_cast<uint32_t>(span) * 38;
   if (collisionA <= collisionWindow || collisionB <= collisionWindow || (t % collisionPeriod) < (64 + span)) {
     uint8_t hit = qadd8(142, scale8(pulse, 92));
-    uint8_t c1 = (p1 + p2) / 2;
-    uint8_t c2 = (NUM_LEDS - 1 - p1 + p3) / 2;
+    uint16_t c1 = (uint16_t)(p1 + p2) / 2;
+    uint16_t c2 = (uint16_t)((NUM_LEDS - 1 - p1) + p3) / 2;
     for (int8_t k = -1; k <= 1; ++k) {
       addWrappedRed(stripJ1, c1 + k, hit);
       addWrappedRed(stripJ2, c2 + k, hit);
