@@ -116,7 +116,16 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     transient = _clamp(max(_num(audio, "transient"), _num(audio, "transient_score")), 0.0, 1.0)
 
     browse = _clamp(_num(cv, "cv4_wavetable_browse") / max_cv, 0.0, 1.0)
-    dispersion = _clamp(_num(cv, "cv5_dispersion") / max_cv, 0.0, 1.0)
+    # CV5 was 'dispersion', now 'transpose' (Pablo repatched 6/3). For the
+    # ESP32 lighting layer this is just another modulation signal — its
+    # role downstream is "another scene-feature CV value to drive light
+    # speed/intensity." Read either label so the script keeps working
+    # whether the bridge writes the old or new key.
+    dispersion = _clamp(
+        (_num(cv, "cv5_transpose") if "cv5_transpose" in cv else _num(cv, "cv5_dispersion"))
+        / max_cv,
+        0.0, 1.0,
+    )
     # CV6 is now the main-mix VCA (was cv6_dispersion_pattern). It tracks
     # overall room energy with glacial smoothing — a perfect ENERGY envelope
     # for the slow red breathing layer. Back-compat: read the old label if

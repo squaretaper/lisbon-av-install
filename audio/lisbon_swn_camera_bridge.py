@@ -48,7 +48,7 @@ CV_LABELS = [
     "cv2_voice2_1v_oct",
     "cv3_voice3_1v_oct",
     "cv4_wavetable_browse",
-    "cv5_dispersion",
+    "cv5_transpose",
     "cv6_main_mix_vca",
     "cv7_glitch_trigger",
     "cv8_depth",
@@ -74,7 +74,7 @@ PER_CV_SMOOTHING_HZ = [
     6.0,    # cv2 voice2 1v/oct
     6.0,    # cv3 voice3 1v/oct
     10.0,   # cv4 wavetable browse
-    10.0,   # cv5 dispersion
+    6.0,    # cv5 transpose — slow bipolar V/oct shift (was 10Hz dispersion)
     6.0,    # cv6 main mix VCA   — CV-side slew (input is already low-passed)
     24.0,   # cv7 glitch trigger — fastest, gates pink noise
     10.0,   # cv8 depth
@@ -540,7 +540,7 @@ class SceneServer:
             "    h+=row('cv2 voice2',cv.cv2_voice2_1v_oct,mx);\n"
             "    h+=row('cv3 voice3',cv.cv3_voice3_1v_oct,mx);\n"
             "    h+=row('cv4 browse',cv.cv4_wavetable_browse,mx);\n"
-            "    h+=row('cv5 disp',cv.cv5_dispersion,mx);\n"
+            "    h+=row('cv5 transpose',cv.cv5_transpose,mx);\n"
             "    h+=row('cv6 MIX VCA',cv.cv6_main_mix_vca,mx,'Quad VCA');\n"
             "    h+=row('cv7 GLITCH',cv.cv7_glitch_trigger,mx,'O&C gate');\n"
             "    h+=row('cv8 depth',cv.cv8_depth,mx);\n"
@@ -813,7 +813,7 @@ class LisbonSwnMapper:
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
             (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.45,
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
-            0.020 + 0.190 * motion,  # dispersion
+            self.max_cv * (0.50 + 0.35 * (0.5 - centroid_y)),  # cv5 transpose (was dispersion 6/3)
             self.max_cv * mix_target,  # CV6 main mix VCA
             0.0 if motion <= 0.005 else self.max_cv * (_clamp01(motion * 2.6) ** 0.55),  # CV7 glitch trigger (sensitivity tuned 6/3)
             0.035 + 0.190 * activity,  # depth
@@ -1012,7 +1012,17 @@ class HumanAwareSwnMapper:
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,
             (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.42,
             0.025 + 0.165 * (0.62 * x + 0.23 * spread + 0.15 * activity),
-            0.015 + 0.185 * (0.50 * mean_distance + 0.25 * count + 0.25 * activity),
+            # CV5 -> SWN TRANSPOSE (was dispersion). Operator patched 6/3:
+            # this is no longer textural drift, it's bipolar V/oct shift of
+            # the whole oscillator bank. We give it a center-biased value
+            # around max_cv/2 with a slow bipolar swing driven by centroid_y
+            # (vertical position of bodies in the frame). People high in
+            # frame -> transpose up; low -> down. The whole chord lifts or
+            # weighs depending on where the room "points."
+            # Sub-mHz LFO already lives at the chord layer (root drift), so
+            # this signal is body-driven only — structural harmonic motion,
+            # not gesture.
+            self.max_cv * (0.50 + 0.35 * (0.5 - y)),  # cv5 transpose center+bipolar
             self.max_cv * mix_target,
             self._movement_gate_target(scene),
             0.025 + 0.185 * (0.68 * nearest + 0.22 * activity + 0.10 * movement),
