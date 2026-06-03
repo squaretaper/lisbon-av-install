@@ -53,6 +53,7 @@ DEFAULT_ROOT_SEMITONES = 36.0  # D2
 
 DEFAULT_SMOOTHING_HZ = 0.35   # gentle slew so V/oct changes don't pop
 DEFAULT_PITCH_WANDER = 1.0    # multiplier on the bridge's existing pitch_wander
+DEFAULT_TRANSITION_SECONDS = 30.0   # slow musical modulation between voicings
 
 
 def resolve_chord(profile_chord: dict | None) -> dict:
@@ -92,11 +93,66 @@ def resolve_chord(profile_chord: dict | None) -> dict:
     root = float(profile_chord.get("root_semitones", DEFAULT_ROOT_SEMITONES))
     smoothing = float(profile_chord.get("smoothing_hz", DEFAULT_SMOOTHING_HZ))
     pitch_wander = float(profile_chord.get("pitch_wander_scale", DEFAULT_PITCH_WANDER))
+    transition = float(profile_chord.get("transition_seconds", DEFAULT_TRANSITION_SECONDS))
 
     return {
         "root_semitones": root,
         "voice_offsets": (v1, v2, v3),
         "smoothing_hz": smoothing,
         "pitch_wander_scale": pitch_wander,
+        "transition_seconds": transition,
         "voicing": voicing_name,
     }
+
+
+def _smoothstep(t: float) -> float:
+    """Hermite smoothstep — t*t*(3 - 2t). Eases in/out symmetrically.
+
+    Musically: feels like a chord swelling into place rather than linearly
+    sliding through micro-tonal intermediate pitches.
+    """
+    if t <= 0.0:
+        return 0.0
+    if t >= 1.0:
+        return 1.0
+    return t * t * (3.0 - 2.0 * t)
+
+
+def interpolate_chord(
+    from_chord: dict | None,
+    to_chord: dict,
+    *,
+    elapsed_seconds: float,
+) -> dict:
+    """Return a chord dict whose voice_offsets and root are blended between
+    `from_chord` and `to_chord`. Both chords are dicts as returned by
+    `resolve_chord`. If `from_chord` is None or the transition is complete
+    (or `to_chord.transition_seconds <= 0`), returns `to_chord` unchanged.
+
+    Smoothing_hz and pitch_wander_scale come from `to_chord`; only the
+    pitch material crossfades. Voicing label tracks `to_chord` since the
+    naming is conceptual, not numeric.
+    """
+    duration = float(to_chord.get("transition_seconds", 0.0))
+    if from_chord is None or duration <= 0.0:
+        return to_chord
+    t = max(0.0, min(1.0, elapsed_seconds / duration))
+    if t >= 1.0:
+        return to_chord
+    a = _smoothstep(t)
+    from_off = from_chord.get("voice_offsets", (0.0, 7.0, 12.0))
+    to_off = to_chord["voice_offsets"]
+    from_root = float(from_chord.get("root_semitones", DEFAULT_ROOT_SEMITONES))
+    to_root = float(to_chord["root_semitones"])
+    blended = {
+        "root_semitones": from_root + (to_root - from_root) * a,
+        "voice_offsets": tuple(
+            f + (t_ - f) * a for f, t_ in zip(from_off, to_off)
+        ),
+        "smoothing_hz": to_chord["smoothing_hz"],
+        "pitch_wander_scale": to_chord["pitch_wander_scale"],
+        "transition_seconds": duration,
+        "voicing": to_chord.get("voicing"),
+        "_transition_progress": a,  # for status/debug surfaces
+    }
+    return blended

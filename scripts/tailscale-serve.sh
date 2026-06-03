@@ -6,8 +6,9 @@
 # Adds:
 #   /camera/   ->  http://127.0.0.1:8765/   (camera probe: live frame, MJPEG, status)
 #   /audio/    ->  http://127.0.0.1:8767/   (room audio probe: rms, peak, FFT, status)
+#   /scene/    ->  http://127.0.0.1:8768/   (annotated YOLO+ByteTrack preview from SWN bridge)
 #
-# Routes are path-scoped under /camera/ and /audio/ so additional bridges
+# Routes are path-scoped under /camera/, /audio/, /scene/ so additional bridges
 # (/swn/, /hermes/, /lights/) can land cleanly later without root-route
 # collisions.
 #
@@ -35,6 +36,9 @@ case "$action" in
     echo
     echo "=== adding /audio/ -> 127.0.0.1:8767 ==="
     "$TS" serve --bg --https=443 --set-path=/audio/ http://127.0.0.1:8767/
+    echo
+    echo "=== adding /scene/ -> 127.0.0.1:8768 ==="
+    "$TS" serve --bg --https=443 --set-path=/scene/ http://127.0.0.1:8768/
     echo
     "$TS" serve status
     ;;
