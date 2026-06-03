@@ -34,7 +34,7 @@ def test_cv_labels_match_new_routing():
     assert CV_LABELS[1] == "cv2_voice2_1v_oct"
     assert CV_LABELS[2] == "cv3_voice3_1v_oct"
     assert CV_LABELS[3] == "cv4_wavetable_browse"
-    assert CV_LABELS[4] == "cv5_dispersion"
+    assert CV_LABELS[4] == "cv5_transpose"
     assert CV_LABELS[5] == "cv6_main_mix_vca"
     assert CV_LABELS[6] == "cv7_glitch_trigger"
     assert CV_LABELS[7] == "cv8_depth"

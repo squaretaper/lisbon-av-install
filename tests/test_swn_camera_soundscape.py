@@ -196,7 +196,9 @@ def test_human_aware_mapper_is_graduated_not_binary_and_uses_people_count_distan
     assert cv_empty != cv_far != cv_close
 
     # Person distance/count should create gradual increases in the timbral CVs.
-    assert cv_close[4] > cv_far[4] > cv_empty[4]  # dispersion
+    # CV5 is now transpose (bipolar centroid_y driven), so it no longer
+    # grades with distance — just assert it stays within valid V/oct band.
+    assert all(0.0 <= cv[4] <= 0.22 for cv in (cv_empty, cv_far, cv_close))
     assert cv_close[7] > cv_far[7] > cv_empty[7]  # depth/proximity
 
     # CV7 is now patched as a movement gate, so mere presence/spread should not open it.
