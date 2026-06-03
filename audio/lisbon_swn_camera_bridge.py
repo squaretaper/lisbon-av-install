@@ -597,12 +597,13 @@ class SceneServer:
 class YoloByteTrackPersonDetector:
     """Lazy Ultralytics YOLO + ByteTrack wrapper for person observations."""
 
-    def __init__(self, model_name: str = "yolo11n.pt", *, confidence: float = 0.35, tracker: str = "bytetrack.yaml") -> None:
+    def __init__(self, model_name: str = "yolo11n.pt", *, confidence: float = 0.35, tracker: str = "bytetrack.yaml", imgsz: int = 480) -> None:
         from ultralytics import YOLO
 
         self.model = YOLO(model_name)
         self.confidence = float(confidence)
         self.tracker = tracker
+        self.imgsz = int(imgsz)
 
     def detect(self, image: Image.Image) -> list[PersonObservation]:
         frame = np.asarray(image.convert("RGB"))
@@ -612,6 +613,7 @@ class YoloByteTrackPersonDetector:
             classes=[0],
             conf=self.confidence,
             tracker=self.tracker,
+            imgsz=self.imgsz,
             verbose=False,
         )
         if not results:
@@ -779,7 +781,7 @@ class LisbonSwnMapper:
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             0.020 + 0.190 * motion,  # dispersion
             self.max_cv * mix_target,  # CV6 main mix VCA
-            0.0 if motion <= 0.01 else self.max_cv * (_clamp01(motion * 1.85) ** 0.7),  # CV7 glitch trigger
+            0.0 if motion <= 0.005 else self.max_cv * (_clamp01(motion * 2.6) ** 0.55),  # CV7 glitch trigger (sensitivity tuned 6/3)
             0.035 + 0.190 * activity,  # depth
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt)
@@ -845,11 +847,16 @@ class HumanAwareSwnMapper:
 
     def _movement_gate_target(self, scene: PersonScene) -> float:
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
-        if movement <= 0.01:
+        if movement <= 0.005:
             return 0.0
         # Open the gate with a curved response so small real motion is audible,
         # but detector noise below the stillness gates remains fully closed.
-        gate = _clamp01(movement * 1.85) ** 0.7
+        # Tuned (2026-06-03 live test): operator feedback "glitch needs a
+        # touch more sensitivity for movement". Bumped multiplier 1.85 -> 2.6
+        # and softened exponent 0.7 -> 0.55 so a casual walk lands around
+        # 0.4-0.6 of max_cv instead of 0.2-0.3. The max_cv ceiling still
+        # caps the absolute level.
+        gate = _clamp01(movement * 2.6) ** 0.55
         return float(np.clip(self.max_cv * gate, 0.0, self.max_cv))
 
     def step_movement_gate_only(self, scene: PersonScene, current_values: Sequence[float], *, dt: float) -> list[float]:
@@ -1233,6 +1240,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--yolo-model", default="yolo11n.pt", help="Ultralytics model name/path for --vision-mode people")
     p.add_argument("--yolo-conf", type=float, default=0.25, help="YOLO confidence threshold; lower = more sensitive (default 0.25)")
     p.add_argument("--yolo-tracker", default="bytetrack.yaml")
+    p.add_argument("--yolo-imgsz", type=int, default=480, help="YOLO inference image size; lower = faster (default 480, ~4x speedup vs 1080p)")
     p.add_argument("--tracker-max-missing", type=int, default=16, help="frames a track survives without re-detection before being culled (default 16 = 8s at camera_hz=2)")
     p.add_argument("--tracker-match-threshold", type=float, default=0.24, help="centroid distance threshold for nearest-neighbor re-matching")
     p.add_argument("--preview-hz", type=float, default=2.0, help="annotated preview write rate in people mode; <=0 disables")
@@ -1359,7 +1367,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 scene = state["person_scene"]
                 if args.vision_mode == "people":
                     if detector is None:
-                        detector = YoloByteTrackPersonDetector(args.yolo_model, confidence=args.yolo_conf, tracker=args.yolo_tracker)
+                        detector = YoloByteTrackPersonDetector(args.yolo_model, confidence=args.yolo_conf, tracker=args.yolo_tracker, imgsz=args.yolo_imgsz)
                     observations = detector.detect(img)
                     scene = person_tracker.update(observations, frame_size=img.size, dt=dt)
                     # Update track age counters: increment seen ids, drop ones that disappeared.
@@ -1406,7 +1414,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             except Exception as exc:  # keep audio safe/running if the camera or detector hiccups
                 with lock:
                     state["error"] = repr(exc)
-            stop.wait(interval)
+            # Adaptive throttle: only sleep if we finished the iteration
+            # faster than the target interval. If YOLO took longer, loop
+            # immediately so we run as fast as the detector allows.
+            elapsed = time.monotonic() - now
+            remaining = interval - elapsed
+            if remaining > 0.001:
+                stop.wait(remaining)
 
     def snapshot_status() -> dict[str, Any]:
         with lock:
