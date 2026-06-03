@@ -55,6 +55,17 @@ DEFAULT_SMOOTHING_HZ = 0.35   # gentle slew so V/oct changes don't pop
 DEFAULT_PITCH_WANDER = 1.0    # multiplier on the bridge's existing pitch_wander
 DEFAULT_TRANSITION_SECONDS = 30.0   # slow musical modulation between voicings
 
+# Glacial chord drift — independent of reviewer decisions. Two sub-mHz LFOs
+# breathe the root and the voice offsets so the chord is never statically
+# fixed even when no profile arrives or no people are present. Designed to
+# be imperceptible per minute but obvious across a session. Bounded to
+# fractions of a semitone so it never disrupts the chord identity — the
+# voicing label stays valid throughout.
+DRIFT_ROOT_PERIOD_SEC = 1320.0    # 22 min — glacial root wander
+DRIFT_OFFSET_PERIOD_SEC = 480.0   # 8 min — breathing on voice 2/3 spread
+DRIFT_ROOT_AMPL_SEMI = 1.8        # ±1.8 semitones max root drift
+DRIFT_OFFSET_AMPL_SEMI = 0.45     # ±0.45 semitone breathing per voice
+
 
 def resolve_chord(profile_chord: dict | None) -> dict:
     """Resolve a profile's chord block to concrete voice offsets.
@@ -103,6 +114,48 @@ def resolve_chord(profile_chord: dict | None) -> dict:
         "transition_seconds": transition,
         "voicing": voicing_name,
     }
+
+
+def apply_chord_drift(
+    chord: dict,
+    *,
+    drift_phase_seconds: float,
+    root_ampl_semi: float = DRIFT_ROOT_AMPL_SEMI,
+    offset_ampl_semi: float = DRIFT_OFFSET_AMPL_SEMI,
+    root_period_sec: float = DRIFT_ROOT_PERIOD_SEC,
+    offset_period_sec: float = DRIFT_OFFSET_PERIOD_SEC,
+) -> dict:
+    """Return a chord with sub-mHz LFO drift applied to root + voice offsets.
+
+    Glacial, autonomous evolution — runs even with no reviewer profile and
+    no people present. Two slow sine LFOs (separate periods so they don't
+    phase-lock) breathe the chord material:
+      - root drifts ±root_ampl_semi over root_period_sec
+      - voices 2 and 3 breathe in opposite phase ±offset_ampl_semi over
+        offset_period_sec (voice 1 stays anchored as the root reference)
+
+    Pure function — phase is provided by the caller. The mapper holds a
+    monotonic clock and threads its current value in on every step.
+    """
+    import math as _math
+
+    root_phase = (drift_phase_seconds / root_period_sec) * 2.0 * _math.pi
+    off_phase = (drift_phase_seconds / offset_period_sec) * 2.0 * _math.pi
+
+    root = float(chord.get("root_semitones", DEFAULT_ROOT_SEMITONES))
+    root += root_ampl_semi * _math.sin(root_phase)
+
+    v1, v2, v3 = chord.get("voice_offsets", (0.0, 7.0, 12.0))
+    # Voice 1 untouched (anchored as the harmonic floor).
+    # Voice 2 + voice 3 breathe in opposite phase so the spread between
+    # them slowly widens and narrows.
+    v2 = float(v2) + offset_ampl_semi * _math.sin(off_phase)
+    v3 = float(v3) - offset_ampl_semi * _math.sin(off_phase)
+
+    drifted = dict(chord)
+    drifted["root_semitones"] = root
+    drifted["voice_offsets"] = (float(v1), v2, v3)
+    return drifted
 
 
 def _smoothstep(t: float) -> float:

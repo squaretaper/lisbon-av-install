@@ -32,13 +32,15 @@ from PIL import Image, ImageDraw
 # between chords. Defensive import so the bridge still runs if the module
 # isn't available (e.g. older deployments).
 try:
-    from audio.chord_palette import interpolate_chord  # type: ignore
+    from audio.chord_palette import interpolate_chord, apply_chord_drift  # type: ignore
 except Exception:
     try:
-        from chord_palette import interpolate_chord  # type: ignore
+        from chord_palette import interpolate_chord, apply_chord_drift  # type: ignore
     except Exception:
         def interpolate_chord(from_chord, to_chord, *, elapsed_seconds):  # type: ignore
             return to_chord
+        def apply_chord_drift(chord, *, drift_phase_seconds, **kwargs):  # type: ignore
+            return chord
 
 
 CV_LABELS = [
@@ -47,12 +49,15 @@ CV_LABELS = [
     "cv3_voice3_1v_oct",
     "cv4_wavetable_browse",
     "cv5_dispersion",
-    "cv6_dispersion_pattern",
-    "cv7_movement_gate",
+    "cv6_main_mix_vca",
+    "cv7_glitch_trigger",
     "cv8_depth",
 ]
 
-MOVEMENT_GATE_CV_INDEX = 6
+# CV7 drives the O&C logic gate that gates pink noise into SWN dispersion_pattern.
+# Conceptually a "glitch trigger" — sparse, gated by people-movement, used as spice.
+GLITCH_TRIGGER_CV_INDEX = 6
+MOVEMENT_GATE_CV_INDEX = GLITCH_TRIGGER_CV_INDEX  # back-compat alias
 
 
 @dataclass(frozen=True)
@@ -616,6 +621,11 @@ class LisbonSwnMapper:
         self._chord_previous: dict | None = None
         self._chord_set_at: float = 0.0
         self._chord_now = time.monotonic
+        # Glacial drift baseline — captured once at mapper construction so
+        # the autonomous LFO phase is stable across the process lifetime.
+        # Restarting the bridge re-seeds the drift, which is desired (each
+        # show starts at zero drift, gathers over the session).
+        self._drift_start: float = self._chord_now()
 
     def set_chord(self, chord: dict | None) -> None:
         """Receive a chord block resolved by audio.chord_palette.resolve_chord.
@@ -639,7 +649,14 @@ class LisbonSwnMapper:
         if self._chord is None:
             return None
         elapsed = self._chord_now() - self._chord_set_at
-        return interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
+        blended = interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
+        # Glacial autonomous drift — runs even when no reviewer profile arrives.
+        # Phase is the monotonic clock since mapper construction, so different
+        # mapper instances have independent drift trajectories (each install
+        # starts at its own phase) and the drift is continuous across chord
+        # changes (the LFO doesn't reset when the reviewer picks a new chord).
+        drift_phase = self._chord_now() - self._drift_start
+        return apply_chord_drift(blended, drift_phase_seconds=drift_phase)
 
     def step(
         self,
@@ -676,14 +693,18 @@ class LisbonSwnMapper:
             wander_scale = 1.0
         pitch_wander = ((centroid_x - 0.5) * (0.9 * semitone) + motion * (0.5 * semitone)) * wander_scale
 
+        # CV6 -> Intellijel Quad VCA CV1 (normalled to VCAs 2-4). Single CV
+        # controls both main mix channels. In aggregate (no-people) mode we
+        # ride brightness + activity for a slow swell.
+        mix_target = 0.60 + 0.30 * _clamp01(0.55 * brightness + 0.45 * activity)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
             (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.45,
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             0.020 + 0.190 * motion,  # dispersion
-            0.020 + 0.035 * int(min(4, max(0, math.floor((centroid_y + activity) * 2.5)))),
-            0.0 if motion <= 0.01 else self.max_cv * (_clamp01(motion * 1.85) ** 0.7),  # movement gate on CV7
+            self.max_cv * mix_target,  # CV6 main mix VCA
+            0.0 if motion <= 0.01 else self.max_cv * (_clamp01(motion * 1.85) ** 0.7),  # CV7 glitch trigger
             0.035 + 0.190 * activity,  # depth
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt)
@@ -711,6 +732,11 @@ class HumanAwareSwnMapper:
         self._chord_previous: dict | None = None
         self._chord_set_at: float = 0.0
         self._chord_now = time.monotonic
+        # Glacial drift baseline — captured once at mapper construction so
+        # the autonomous LFO phase is stable across the process lifetime.
+        # Restarting the bridge re-seeds the drift, which is desired (each
+        # show starts at zero drift, gathers over the session).
+        self._drift_start: float = self._chord_now()
 
     def set_chord(self, chord: dict | None) -> None:
         """Receive a chord block resolved by audio.chord_palette.resolve_chord.
@@ -733,7 +759,14 @@ class HumanAwareSwnMapper:
         if self._chord is None:
             return None
         elapsed = self._chord_now() - self._chord_set_at
-        return interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
+        blended = interpolate_chord(self._chord_previous, self._chord, elapsed_seconds=elapsed)
+        # Glacial autonomous drift — runs even when no reviewer profile arrives.
+        # Phase is the monotonic clock since mapper construction, so different
+        # mapper instances have independent drift trajectories (each install
+        # starts at its own phase) and the drift is continuous across chord
+        # changes (the LFO doesn't reset when the reviewer picks a new chord).
+        drift_phase = self._chord_now() - self._drift_start
+        return apply_chord_drift(blended, drift_phase_seconds=drift_phase)
 
     def _movement_gate_target(self, scene: PersonScene) -> float:
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
@@ -791,13 +824,21 @@ class HumanAwareSwnMapper:
             id_signature = sum(((track.id % 7) - 3) for track in scene.tracks[:3]) / 18.0
             pitch_wander += id_signature * semitone * wander_scale
 
+        # CV6 -> Intellijel Quad VCA CV1 (normalled to VCA2/3/4). Controls
+        # main mix L/R volume from a single CV. We keep the room audible at
+        # all times (baseline ~0.60 of max_cv) but let presence push it up
+        # and quiet sparse moments pull it down. Glacial response — the
+        # _slew_targets pass below smooths sudden jumps; here we set the
+        # target, not the trajectory.
+        presence = 0.55 * count + 0.30 * activity + 0.15 * (1.0 - max(0.0, mean_distance - 0.3))
+        mix_target = 0.60 + 0.30 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
             (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,
             (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.42,
             0.025 + 0.165 * (0.62 * x + 0.23 * spread + 0.15 * activity),
             0.015 + 0.185 * (0.50 * mean_distance + 0.25 * count + 0.25 * activity),
-            0.020 + 0.145 * (0.45 * y + 0.30 * spread + 0.25 * activity),
+            self.max_cv * mix_target,
             self._movement_gate_target(scene),
             0.025 + 0.185 * (0.68 * nearest + 0.22 * activity + 0.10 * movement),
         ]
@@ -1151,10 +1192,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     # chord; fast loop slews to the new V/oct targets smoothly via
     # smoothing_hz. If the profile is missing, malformed, or expired, the
     # mappers fall back to the hardcoded open-fifth.
+    #
+    # Same dual-import dance as the module-level helpers: the bridge runs
+    # as `python audio/lisbon_swn_camera_bridge.py` with cwd at project
+    # root, which puts `audio/` on sys.path (not the project root), so
+    # `import audio.chord_palette` fails. Fall back to bare `chord_palette`.
+    resolve_chord = None
     try:
         from audio.chord_palette import resolve_chord  # type: ignore
     except Exception:
-        resolve_chord = None  # bridge still works without the palette module
+        try:
+            from chord_palette import resolve_chord  # type: ignore
+        except Exception:
+            resolve_chord = None  # bridge still works without the palette module
 
     profile_path = status_path.parent / "heuristic_profile.json"
     profile_state: dict[str, Any] = {"mtime": 0.0, "chord": None}
@@ -1179,13 +1229,22 @@ def main(argv: Sequence[str] | None = None) -> int:
                         profile_state["chord"] = chord
                         aggregate_mapper.set_chord(chord)
                         human_mapper.set_chord(chord)
+                        # Log once per successful poll so deployment errors
+                        # are surfaceable from launchd logs.
+                        print(f"[poll] chord set: {chord.get('voicing')}@{chord.get('root_semitones'):.1f}", flush=True)
                     else:
                         profile_state["chord"] = None
                         aggregate_mapper.set_chord(None)
                         human_mapper.set_chord(None)
-            except (OSError, json.JSONDecodeError):
+                        print(f"[poll] chord cleared (expired={expired}, has_resolver={resolve_chord is not None})", flush=True)
+            except (OSError, json.JSONDecodeError) as exc:
                 # No profile yet, or unreadable — mappers keep last good chord.
-                pass
+                print(f"[poll] expected io/json error: {exc!r}", flush=True)
+            except Exception as exc:
+                # Anything else (KeyError, AttributeError, import-deferred
+                # NameError, etc.) was previously dropped silently and made
+                # the chord layer look broken. Surface it.
+                print(f"[poll] UNEXPECTED ERROR: {exc!r}", flush=True)
             stop.wait(1.0)
     detector: YoloByteTrackPersonDetector | None = None
     lock = threading.Lock()

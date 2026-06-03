@@ -62,6 +62,25 @@ def _drone_motion_params(freq_hz: float, energy: float, low_band: float) -> tupl
     return chase_ms, pulse_depth, packet_span
 
 
+def _chord_pulse_period_ms(chord: dict[str, Any] | None) -> int | None:
+    """Derive a slow pulse period (ms) tightly correlated with the active chord root.
+
+    The musical idea: when the chord settles on a low D2 (root_semitones ~36),
+    the LEDs breathe slowly; when the chord climbs to F3 (~53), the breath
+    quickens slightly. Stays in a glacial 320-960ms band so it reads as
+    breathing, never as flicker. Returns None when no chord block is present
+    so the caller can fall back to the existing audio-derived chase_ms.
+    """
+    if not isinstance(chord, dict):
+        return None
+    root = chord.get("root_semitones")
+    if not isinstance(root, (int, float)):
+        return None
+    # Map root semitone (0..60 = C0..B5) to a pulse band [960ms slow, 320ms fast].
+    # Low roots = slow breath, higher roots = slightly faster.
+    norm = _clamp((float(root) - 24.0) / 36.0, 0.0, 1.0)  # 24=C2 baseline, 60=B5
+    return int(round(960.0 - 640.0 * norm))
+
 def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     """Map soundscape JSON to one of the ESP32 red-only motion states.
 
@@ -78,6 +97,8 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     scene = status.get("person_scene") or {}
     features = status.get("features") or {}
     cv = status.get("cv") or {}
+    chord = status.get("chord") or None  # active chord block, may be None
+    chord_pulse_ms = _chord_pulse_period_ms(chord)
     max_cv = max(0.05, _num(status, "max_cv", 0.20))
 
     rms = max(_num(audio, "stereo_rms"), _num(audio, "input_1_rms"), _num(audio, "input_2_rms"))
@@ -96,13 +117,37 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
 
     browse = _clamp(_num(cv, "cv4_wavetable_browse") / max_cv, 0.0, 1.0)
     dispersion = _clamp(_num(cv, "cv5_dispersion") / max_cv, 0.0, 1.0)
-    pattern = _clamp(_num(cv, "cv6_dispersion_pattern") / max_cv, 0.0, 1.0)
-    movement_gate = _clamp((_num(cv, "cv7_movement_gate") if "cv7_movement_gate" in cv else _num(cv, "cv7_wt_spread")) / max_cv, 0.0, 1.0)
+    # CV6 is now the main-mix VCA (was cv6_dispersion_pattern). It tracks
+    # overall room energy with glacial smoothing — a perfect ENERGY envelope
+    # for the slow red breathing layer. Back-compat: read the old label if
+    # the snapshot is from a pre-remap deployment.
+    main_mix_vca = _clamp(
+        (_num(cv, "cv6_main_mix_vca") if "cv6_main_mix_vca" in cv else _num(cv, "cv6_dispersion_pattern"))
+        / max_cv,
+        0.0,
+        1.0,
+    )
+    # CV7 is now the glitch trigger (was cv7_movement_gate). It opens the
+    # O&C logic gate that gates pink noise into SWN dispersion_pattern.
+    # Audibly this is the high-frequency glitch spice — use it to fire
+    # strobe bursts on the ESP32 layer for tight audio/light correlation.
+    glitch_trigger = _clamp(
+        (_num(cv, "cv7_glitch_trigger") if "cv7_glitch_trigger" in cv else _num(cv, "cv7_movement_gate"))
+        / max_cv,
+        0.0,
+        1.0,
+    )
+    # Legacy alias kept so the rest of this function reads naturally.
+    movement_gate = glitch_trigger
+    pattern = main_mix_vca  # slow energy envelope, was the old "pattern" role
     depth = _clamp(_num(cv, "cv8_depth") / max_cv, 0.0, 1.0)
-    soundscape_freq_hz = 120.0 + 3880.0 * _clamp(0.78 * browse + 0.22 * movement_gate, 0.0, 1.0)
-    soundscape_high = _clamp(0.35 * movement_gate + 0.65 * browse, 0.0, 1.0)
-    soundscape_glitch = _clamp(0.40 * dispersion + 0.24 * pattern + 0.22 * depth + 0.14 * movement_gate, 0.0, 1.0)
-    soundscape_energy = _clamp(0.32 * browse + 0.18 * movement_gate + 0.24 * depth + 0.26 * dispersion, 0.0, 1.0)
+    soundscape_freq_hz = 120.0 + 3880.0 * _clamp(0.78 * browse + 0.22 * glitch_trigger, 0.0, 1.0)
+    soundscape_high = _clamp(0.35 * glitch_trigger + 0.65 * browse, 0.0, 1.0)
+    # Glitch score: weighted toward the explicit glitch_trigger CV plus
+    # dispersion (the actual pink-noise injection level). Pattern (now
+    # main_mix_vca) and depth contribute less because they're slow.
+    soundscape_glitch = _clamp(0.55 * glitch_trigger + 0.30 * dispersion + 0.10 * depth + 0.05 * main_mix_vca, 0.0, 1.0)
+    soundscape_energy = _clamp(0.32 * browse + 0.18 * glitch_trigger + 0.24 * depth + 0.26 * dispersion, 0.0, 1.0)
 
     people = int(max(0.0, _num(scene, "people_count")))
     activity = _clamp(_num(scene, "activity"), 0.0, 1.0)
@@ -161,6 +206,13 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     if audio_present:
         if audio_energy < 0.04:
             chase_ms, pulse_depth, packet_span = _drone_motion_params(freq_hz, audio_energy, low_band)
+            # Blend chord-correlated pulse rate when available. Chord pulse
+            # is the slow musical clock (root_semitones-derived); audio chase
+            # is the fast-loop reaction. 70/30 chord-dominant in faint drones
+            # so the visual stays locked to the chord even when audio is
+            # marginal.
+            if chord_pulse_ms is not None:
+                chase_ms = int(round(0.7 * chord_pulse_ms + 0.3 * chase_ms))
             faint_brightness = int(round(_clamp(24 + 72 * audio_energy + 16 * low_band, 16, 64) / 16.0) * 16)
             return LightState(
                 mode="1",
@@ -168,9 +220,14 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
                 chase_ms=chase_ms,
                 pulse_depth=pulse_depth,
                 packet_span=packet_span,
-                reason=f"audio faint drone chase {freq_hz:.0f}Hz speed={chase_ms}ms span={packet_span}",
+                reason=f"audio faint drone chase {freq_hz:.0f}Hz speed={chase_ms}ms span={packet_span}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else ""),
             )
         chase_ms, pulse_depth, packet_span = _drone_motion_params(freq_hz, audio_energy, low_band)
+        # Same chord-pulse blend, weighted slightly less (50/50) when audio
+        # is energetic — the room is loud, the chord still matters but the
+        # spectral content should drive faster motion.
+        if chord_pulse_ms is not None:
+            chase_ms = int(round(0.5 * chord_pulse_ms + 0.5 * chase_ms))
         drone_brightness = int(round(_clamp(24 + 128 * (audio_energy ** 0.85) + 28 * low_band, 16, 176) / 16.0) * 16)
         return LightState(
             mode="1",
@@ -178,7 +235,7 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
             chase_ms=chase_ms,
             pulse_depth=pulse_depth,
             packet_span=packet_span,
-            reason=f"audio drone chase {freq_hz:.0f}Hz speed={chase_ms}ms pulse={pulse_depth} span={packet_span} energy={audio_energy:.2f}",
+            reason=f"audio drone chase {freq_hz:.0f}Hz speed={chase_ms}ms pulse={pulse_depth} span={packet_span} energy={audio_energy:.2f}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else ""),
         )
     if (not audio_present) and (soundscape_freq_hz >= 1400 or soundscape_high >= 0.45):
         return LightState(mode="1", brightness=max(80, brightness), reason=f"soundscape freq {soundscape_freq_hz:.0f}Hz high={soundscape_high:.2f}")
