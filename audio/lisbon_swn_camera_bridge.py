@@ -75,12 +75,10 @@ PER_CV_SMOOTHING_HZ = [
     6.0,    # cv3 voice3 1v/oct
     10.0,   # cv4 wavetable browse
     10.0,   # cv5 dispersion
-    4.0,    # cv6 main mix VCA   — smoothed to average YOLO jitter
+    1.2,    # cv6 main mix VCA   — very slow (~830ms tau) to wash YOLO + scene jitter
     24.0,   # cv7 glitch trigger — fastest, gates pink noise
     10.0,   # cv8 depth
 ]
-
-
 @dataclass(frozen=True)
 class CameraFeatures:
     brightness: float
