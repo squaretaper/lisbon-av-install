@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Reflective reviewer (deterministic). Runs every 8 minutes. Reads
+     status JSON, classifies the room, gaussian-jitters the seed family,
+     writes audio/runtime/heuristic_profile.json with TTL 10 min.
+     Also scores the prior window and appends fitness to history. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.ganchitecture.lisbon-reflective-reviewer</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/ganchitecture/code/lisbon-av-install/audio/run_reflective_reviewer.sh</string>
+    <string>decide</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/ganchitecture/code/lisbon-av-install</string>
+
+  <key>StartInterval</key>
+  <integer>480</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-reflective-reviewer.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-reflective-reviewer.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>WINDOW_SECONDS</key>
+    <string>120</string>
+    <key>JITTER</key>
+    <string>0.1</string>
+    <key>TTL_SECONDS</key>
+    <string>600</string>
+  </dict>
+</dict>
+</plist>
