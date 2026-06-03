@@ -41,6 +41,16 @@ BOUNDS: dict[str, tuple[float, float]] = {
     "cv.max_cv_scale": (0.4, 1.0),
     "cv.movement_gate_ceiling_v": (0.0, 5.0),
     "cv.pitch_drift_scale": (0.0, 1.0),
+    # Chord layer — controls the SWN voices 1/2/3 V/oct positions.
+    # root_semitones is offset from C0 (16.35 Hz). 24..48 = C2..B3.
+    # The three voice_*_semitones are offsets from root; the bridge clamps the
+    # sum (root + voice_offset) into the ES-9 normalized 1V/oct range.
+    "chord.root_semitones": (0.0, 60.0),
+    "chord.voice_1_semitones": (-12.0, 24.0),
+    "chord.voice_2_semitones": (-12.0, 24.0),
+    "chord.voice_3_semitones": (-12.0, 24.0),
+    "chord.smoothing_hz": (0.05, 4.0),
+    "chord.pitch_wander_scale": (0.0, 2.0),
 }
 
 ALLOWED_MODE_BIAS = {
