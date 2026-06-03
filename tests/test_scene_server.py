@@ -116,3 +116,61 @@ def test_scene_server_404_for_unknown_path(tmp_path):
         assert exc_info.value.code == 404
     finally:
         server.stop()
+
+
+def test_scene_server_serves_status_json(tmp_path):
+    """status.json route serves the bridge's status file when wired."""
+    import json as _json
+    preview = tmp_path / "preview.jpg"
+    _write_jpg(preview)
+    status = tmp_path / "status.json"
+    status.write_text(_json.dumps({"ok": True, "cv": {"cv6_main_mix_vca": 0.18}}))
+    port = _free_port()
+    server = SceneServer(port=port, preview_path=preview, host="127.0.0.1", status_path=status)
+    server.start()
+    try:
+        time.sleep(0.05)
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/status.json", timeout=2.0) as r:
+            assert r.status == 200
+            assert "application/json" in r.headers["Content-Type"]
+            body = _json.loads(r.read())
+            assert body["ok"] is True
+            assert body["cv"]["cv6_main_mix_vca"] == 0.18
+    finally:
+        server.stop()
+
+
+def test_scene_server_serves_room_audio_json(tmp_path):
+    """room_audio.json route serves the audio probe file when wired."""
+    import json as _json
+    preview = tmp_path / "preview.jpg"
+    _write_jpg(preview)
+    audio = tmp_path / "audio.json"
+    audio.write_text(_json.dumps({"rms": 0.05, "dom_freq_hz": 180}))
+    port = _free_port()
+    server = SceneServer(port=port, preview_path=preview, host="127.0.0.1", room_audio_path=audio)
+    server.start()
+    try:
+        time.sleep(0.05)
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/room_audio.json", timeout=2.0) as r:
+            body = _json.loads(r.read())
+            assert body["rms"] == 0.05
+            assert body["dom_freq_hz"] == 180
+    finally:
+        server.stop()
+
+
+def test_scene_server_status_404_when_not_configured(tmp_path):
+    """status.json returns 404 if SceneServer was instantiated without a status_path."""
+    preview = tmp_path / "preview.jpg"
+    _write_jpg(preview)
+    port = _free_port()
+    server = SceneServer(port=port, preview_path=preview, host="127.0.0.1")  # no status_path
+    server.start()
+    try:
+        time.sleep(0.05)
+        with pytest.raises(urllib.error.HTTPError) as exc_info:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/status.json", timeout=2.0)
+        assert exc_info.value.code == 404
+    finally:
+        server.stop()

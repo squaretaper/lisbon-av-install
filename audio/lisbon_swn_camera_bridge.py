@@ -437,46 +437,126 @@ def annotate_person_scene(
 
 
 class SceneServer:
-    """Tiny HTTP server that exposes the annotated scene preview JPG.
+    """Tiny HTTP server that exposes the annotated scene preview JPG + status.
 
-    Two routes:
-      GET /          — minimal auto-refreshing HTML viewer
-      GET /scene.jpg — current preview frame (always returns latest available)
+    Routes:
+      GET /             — minimal HTML viewer (annotated frame + live tail)
+      GET /scene.jpg    — current preview frame (always latest atomic-written)
+      GET /status.json  — full SWN bridge status JSON (cv values, chord, scene)
+      GET /room_audio.json — room audio probe status (rms, peak, bands, dom_freq)
 
     Runs in a daemon thread so the bridge main loop owns lifecycle. Designed
     to live behind Tailscale serve (path-scoped HTTPS) — no auth here.
-    The server reads the configured preview file from disk on each request
-    so the main loop's atomic-write pattern remains the single source of truth.
+    The server reads the configured files from disk on each request so the
+    main loop's atomic-write pattern remains the single source of truth.
     """
 
-    def __init__(self, port: int, preview_path: Path, host: str = "127.0.0.1") -> None:
+    def __init__(
+        self,
+        port: int,
+        preview_path: Path,
+        host: str = "127.0.0.1",
+        status_path: Path | None = None,
+        room_audio_path: Path | None = None,
+    ) -> None:
         from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
         self.port = int(port)
         self.host = host
         self.preview_path = Path(preview_path)
-        path_ref = self.preview_path
+        self.status_path = Path(status_path) if status_path else None
+        self.room_audio_path = Path(room_audio_path) if room_audio_path else None
+        preview_ref = self.preview_path
+        status_ref = self.status_path
+        room_ref = self.room_audio_path
 
         HTML_PAGE = (
             "<!doctype html>\n"
             "<html><head><meta charset=\"utf-8\"><base href=\"./\"><title>lisbon scene</title>\n"
             "<style>\n"
-            "  html,body{margin:0;background:#000;color:#ddd;font-family:ui-monospace,monospace}\n"
-            "  #wrap{display:flex;justify-content:center;align-items:center;height:100vh}\n"
-            "  img{max-width:100%;max-height:100vh;display:block}\n"
-            "  .tag{position:fixed;top:8px;right:12px;font-size:11px;opacity:.55}\n"
+            "  html,body{margin:0;background:#0a0a0a;color:#ddd;font-family:ui-monospace,monospace}\n"
+            "  #img{position:fixed;inset:0;background:#000}\n"
+            "  #img img{width:100%;height:100%;object-fit:contain;display:block}\n"
+            "  #panel{position:fixed;right:8px;top:8px;bottom:8px;width:380px;background:rgba(0,0,0,.78);border:1px solid #333;padding:12px;font-size:11px;overflow-y:auto;line-height:1.55}\n"
+            "  .lbl{color:#777;display:inline-block;width:88px}\n"
+            "  .bar{display:inline-block;background:#222;width:130px;height:8px;vertical-align:middle;margin-left:4px}\n"
+            "  .bar > i{display:block;height:100%;background:#c0392b}\n"
+            "  .sec{margin-top:10px;border-top:1px solid #2a2a2a;padding-top:8px;color:#888}\n"
+            "  h1{font-size:11px;margin:0 0 8px;color:#888;letter-spacing:.08em}\n"
+            "  b{color:#eee}\n"
             "</style></head>\n"
-            "<body><div id=\"wrap\"><img id=\"s\" src=\"scene.jpg\"></div>\n"
-            "<div class=\"tag\">scene refresh 5hz</div>\n"
+            "<body><div id=\"img\"><img id=\"s\" src=\"scene.jpg\"></div>\n"
+            "<div id=\"panel\"><h1>LISBON LIVE TAIL</h1><div id=\"out\">loading...</div></div>\n"
             "<script>\n"
+            "const f=n=>n==null?'-':(+n).toFixed(3);\n"
+            "const bar=(v,max)=>{const p=Math.max(0,Math.min(1,(v||0)/(max||1)));return `<span class=bar><i style=width:${(p*100).toFixed(0)}%></i></span>`};\n"
+            "function row(lbl,val,max,note){return `<div><span class=lbl>${lbl}</span><b>${f(val)}</b>${max?bar(val,max):''}${note?' <span style=color:#888>'+note+'</span>':''}</div>`}\n"
             "let im=document.getElementById('s');\n"
-            "setInterval(()=>{ im.src='scene.jpg?t='+Date.now(); }, 200);\n"
+            "setInterval(()=>{ im.src='scene.jpg?t='+Date.now() }, 200);\n"
+            "async function poll(){\n"
+            "  try{\n"
+            "    const [s,r]=await Promise.all([\n"
+            "      fetch('status.json?t='+Date.now()).then(x=>x.json()),\n"
+            "      fetch('room_audio.json?t='+Date.now()).then(x=>x.ok?x.json():null).catch(()=>null)\n"
+            "    ]);\n"
+            "    const cv=s.cv||{}, ch=s.chord||{}, sc=s.person_scene||{}, mx=s.max_cv||0.18;\n"
+            "    const vo=ch.voice_offsets||[];\n"
+            "    let h=`<div class=sec>CHORD</div>`;\n"
+            "    h+=`<div><span class=lbl>voicing</span><b>${ch.voicing||'(none)'}</b></div>`;\n"
+            "    h+=`<div><span class=lbl>root semi</span><b>${f(ch.root_semitones)}</b></div>`;\n"
+            "    h+=`<div><span class=lbl>voices</span><b>${vo.map(f).join(' / ')}</b></div>`;\n"
+            "    h+=`<div class=sec>CV (max=${mx})</div>`;\n"
+            "    h+=row('cv1 voice1',cv.cv1_voice1_1v_oct,mx);\n"
+            "    h+=row('cv2 voice2',cv.cv2_voice2_1v_oct,mx);\n"
+            "    h+=row('cv3 voice3',cv.cv3_voice3_1v_oct,mx);\n"
+            "    h+=row('cv4 browse',cv.cv4_wavetable_browse,mx);\n"
+            "    h+=row('cv5 disp',cv.cv5_dispersion,mx);\n"
+            "    h+=row('cv6 MIX VCA',cv.cv6_main_mix_vca,mx,'Quad VCA');\n"
+            "    h+=row('cv7 GLITCH',cv.cv7_glitch_trigger,mx,'O&C gate');\n"
+            "    h+=row('cv8 depth',cv.cv8_depth,mx);\n"
+            "    h+=`<div class=sec>SCENE</div>`;\n"
+            "    h+=`<div><span class=lbl>people</span><b>${sc.people_count||0}</b></div>`;\n"
+            "    h+=row('activity',sc.activity,1);\n"
+            "    h+=row('movement',sc.movement,1);\n"
+            "    h+=row('nearest',sc.nearest_distance,1);\n"
+            "    h+=row('spread',sc.spread_x,1);\n"
+            "    h+=`<div><span class=lbl>frames</span><b>${s.frames_seen}</b></div>`;\n"
+            "    if(r){\n"
+            "      h+=`<div class=sec>MIC (${r.device||''})</div>`;\n"
+            "      h+=row('rms',r.rms,0.3);\n"
+            "      h+=row('peak',r.peak,0.5);\n"
+            "      h+=`<div><span class=lbl>dom freq</span><b>${(r.dom_freq_hz||0).toFixed(0)} Hz</b></div>`;\n"
+            "      h+=row('low band',r.band_low,1);\n"
+            "      h+=row('mid band',r.band_mid,1);\n"
+            "      h+=row('high band',r.band_high,1);\n"
+            "      const age=Math.max(0,(Date.now()/1000)-(r.timestamp||0));\n"
+            "      h+=`<div><span class=lbl>age</span><b>${age.toFixed(1)}s</b></div>`;\n"
+            "    }else{ h+=`<div class=sec>MIC</div><div style=color:#a33>probe silent</div>`; }\n"
+            "    document.getElementById('out').innerHTML=h;\n"
+            "  }catch(e){ document.getElementById('out').innerHTML='err: '+e.message; }\n"
+            "}\n"
+            "poll(); setInterval(poll,300);\n"
             "</script>\n"
             "</body></html>"
         ).encode("utf-8")
 
+        def _serve_file(handler, path: Path | None, content_type: str) -> None:
+            if path is None:
+                handler.send_response(404); handler.end_headers(); return
+            try:
+                data = path.read_bytes()
+            except (FileNotFoundError, OSError):
+                handler.send_response(503); handler.end_headers(); return
+            handler.send_response(200)
+            handler.send_header("Content-Type", content_type)
+            handler.send_header("Cache-Control", "no-store")
+            handler.send_header("Access-Control-Allow-Origin", "*")
+            handler.send_header("Content-Length", str(len(data)))
+            handler.end_headers()
+            handler.wfile.write(data)
+
         class Handler(BaseHTTPRequestHandler):
-            def log_message(self, fmt, *args):  # silence default access log
+            def log_message(self, fmt, *args):
                 return
 
             def do_GET(self):  # noqa: N802
@@ -489,18 +569,13 @@ class SceneServer:
                     self.wfile.write(HTML_PAGE)
                     return
                 if self.path.startswith("/scene.jpg"):
-                    try:
-                        data = path_ref.read_bytes()
-                    except FileNotFoundError:
-                        self.send_response(503)
-                        self.end_headers()
-                        return
-                    self.send_response(200)
-                    self.send_header("Content-Type", "image/jpeg")
-                    self.send_header("Cache-Control", "no-store")
-                    self.send_header("Content-Length", str(len(data)))
-                    self.end_headers()
-                    self.wfile.write(data)
+                    _serve_file(self, preview_ref, "image/jpeg")
+                    return
+                if self.path.startswith("/status.json"):
+                    _serve_file(self, status_ref, "application/json; charset=utf-8")
+                    return
+                if self.path.startswith("/room_audio.json"):
+                    _serve_file(self, room_ref, "application/json; charset=utf-8")
                     return
                 self.send_response(404)
                 self.end_headers()
@@ -1377,7 +1452,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     scene_server: SceneServer | None = None
     if preview_path is not None and args.scene_port > 0:
         try:
-            scene_server = SceneServer(args.scene_port, preview_path, host=args.scene_host)
+            scene_server = SceneServer(
+                args.scene_port,
+                preview_path,
+                host=args.scene_host,
+                status_path=status_path,
+                room_audio_path=status_path.parent / "room_audio_probe_status.json",
+            )
             scene_server.start()
         except OSError as exc:
             print(f"  scene server: failed to bind {args.scene_host}:{args.scene_port} ({exc})")
