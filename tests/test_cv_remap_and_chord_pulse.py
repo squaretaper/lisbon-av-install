@@ -20,7 +20,7 @@ from lighting.lisbon_esp32_soundscape_sync import (
 )
 
 
-def _scene(people=0, activity=0.0, movement=0.0, near=0.0, mean_dist=0.5, count_norm=0.0) -> PersonScene:
+def _scene(people=0, activity=0.0, movement=0.0, near=0.0, mean_dist=0.0, count_norm=0.0) -> PersonScene:
     return PersonScene(
         people_count=people, tracks=[], centroid_x=0.5, centroid_y=0.5, spread_x=0.0,
         nearest_distance=near, mean_distance=mean_dist, movement=movement, activity=activity,
@@ -52,9 +52,9 @@ def test_main_mix_vca_baseline_when_room_empty():
     # Drive enough steps for the slew to converge.
     for _ in range(80):
         cv = mapper.step_scene(_scene(), dt=0.05)
-    # CV6 is index 5. Empty room -> presence ~= 0.075 (only mean_dist term),
-    # mix_target ~= 0.10 + 0.85*0.075 = ~0.164 of max_cv = ~0.049. Allow slew tolerance.
-    assert 0.035 <= cv[5] <= 0.075, f"empty mix should baseline near 0.05, got {cv[5]:.3f}"
+    # CV6 is index 5. Empty room: people=0, mean_d=0, activity=0 -> presence=0,
+    # mix_target = 0.10 * max_cv 0.30 = 0.030. Allow slew tolerance.
+    assert 0.020 <= cv[5] <= 0.045, f"empty mix should baseline near 0.030, got {cv[5]:.3f}"
 
 
 def test_main_mix_vca_swells_with_presence():
