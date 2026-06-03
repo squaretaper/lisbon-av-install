@@ -1,0 +1,35 @@
+{
+  "schema": "lisbon.heuristic_profile.v1",
+  "profile_id": "seed-balanced-default",
+  "family": "balanced",
+  "source": "seed",
+  "reason": "Seed default. Mid-range on every axis. Safe baseline when no clear scene signal is present, or when the reviewer wants to neutralize an extreme prior profile.",
+  "mode_bias": "balanced",
+  "scene": {
+    "silence_hold_seconds": 8,
+    "density_target": 0.5,
+    "avoid_repetition_seconds": 60
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.5,
+    "stillness_deadband_scale": 1.0,
+    "sector_activity_weight": 0.5
+  },
+  "audio": {
+    "drone_bias": 0.45,
+    "glitch_probability": 0.12,
+    "high_band_strobe_threshold_scale": 1.0,
+    "feedback_suppression": 0.7
+  },
+  "lights": {
+    "brightness_ceiling": 160,
+    "black_floor_bias": 0.35,
+    "strobe_ceiling": 220,
+    "packet_complexity": 0.6
+  },
+  "cv": {
+    "max_cv_scale": 1.0,
+    "movement_gate_ceiling_v": 4.5,
+    "pitch_drift_scale": 0.5
+  }
+}
