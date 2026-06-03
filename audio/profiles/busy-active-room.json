@@ -31,5 +31,11 @@
     "max_cv_scale": 1.0,
     "movement_gate_ceiling_v": 4.8,
     "pitch_drift_scale": 0.6
+  },
+  "chord": {
+    "voicing": "quartal",
+    "root_semitones": 38.0,
+    "smoothing_hz": 0.55,
+    "pitch_wander_scale": 1.3
   }
 }

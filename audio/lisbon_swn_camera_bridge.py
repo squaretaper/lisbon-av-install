@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -497,6 +498,14 @@ class LisbonSwnMapper:
         self.max_cv = float(max_cv)
         self.smoothing_hz = float(smoothing_hz)
         self._current: list[float] | None = None
+        # Chord layer — voices 1/2/3 V/oct positions, in semitone offsets
+        # from the root. The bridge's main loop pushes a resolved chord here
+        # from the live heuristic profile. None = use hardcoded open_fifth.
+        self._chord: dict | None = None
+
+    def set_chord(self, chord: dict | None) -> None:
+        """Receive a chord block resolved by audio.chord_palette.resolve_chord."""
+        self._chord = chord
 
     def step(
         self,
@@ -519,12 +528,23 @@ class LisbonSwnMapper:
         # For 1V/oct, one semitone ~= 0.008333. Keep the camera-induced pitch
         # wobble intentionally tiny; CV1-3 are musical roots, not wild mod busses.
         semitone = 1.0 / 120.0
-        pitch_wander = (centroid_x - 0.5) * (0.9 * semitone) + motion * (0.5 * semitone)
+        # Chord layer: when the reflective reviewer has set a chord, use its
+        # root + voice offsets. Otherwise fall back to the historical
+        # [0, 7, 12] open-fifth so existing tests stay green.
+        if self._chord is not None:
+            root_semi = float(self._chord.get("root_semitones", 0.0)) - 36.0  # normalize to relative
+            voice_offsets = self._chord.get("voice_offsets", (0.0, 7.0, 12.0))
+            wander_scale = float(self._chord.get("pitch_wander_scale", 1.0))
+        else:
+            root_semi = 0.0
+            voice_offsets = (0.0, 7.0, 12.0)
+            wander_scale = 1.0
+        pitch_wander = ((centroid_x - 0.5) * (0.9 * semitone) + motion * (0.5 * semitone)) * wander_scale
 
         targets = [
-            0.0 + pitch_wander,
-            7.0 * semitone + pitch_wander * 0.7,  # fifth-ish
-            12.0 * semitone + pitch_wander * 0.45,  # octave-ish
+            (root_semi + voice_offsets[0]) * semitone + pitch_wander,
+            (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
+            (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.45,
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             0.020 + 0.190 * motion,  # dispersion
             0.020 + 0.035 * int(min(4, max(0, math.floor((centroid_y + activity) * 2.5)))),
@@ -550,6 +570,13 @@ class HumanAwareSwnMapper:
         self.max_cv = float(max_cv)
         self.smoothing_hz = float(smoothing_hz)
         self._current: list[float] | None = None
+        # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
+        # root. None = use the historical hardcoded open-fifth.
+        self._chord: dict | None = None
+
+    def set_chord(self, chord: dict | None) -> None:
+        """Receive a chord block resolved by audio.chord_palette.resolve_chord."""
+        self._chord = chord
 
     def _movement_gate_target(self, scene: PersonScene) -> float:
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
@@ -590,15 +617,26 @@ class HumanAwareSwnMapper:
 
         # Tiny stable pitch signature: enough for identity/position shimmer, not
         # enough to turn the SWN into a random pitch machine.
-        pitch_wander = ((x - 0.5) * 0.85 + movement * 0.35 + count * 0.20) * semitone
+        # Chord layer: when the reflective reviewer has set a chord, use its
+        # root + voice offsets. Otherwise fall back to historical open-fifth
+        # so existing tests stay green.
+        if self._chord is not None:
+            root_semi = float(self._chord.get("root_semitones", 36.0)) - 36.0
+            voice_offsets = self._chord.get("voice_offsets", (0.0, 7.0, 12.0))
+            wander_scale = float(self._chord.get("pitch_wander_scale", 1.0))
+        else:
+            root_semi = 0.0
+            voice_offsets = (0.0, 7.0, 12.0)
+            wander_scale = 1.0
+        pitch_wander = ((x - 0.5) * 0.85 + movement * 0.35 + count * 0.20) * semitone * wander_scale
         if scene.tracks:
             id_signature = sum(((track.id % 7) - 3) for track in scene.tracks[:3]) / 18.0
-            pitch_wander += id_signature * semitone
+            pitch_wander += id_signature * semitone * wander_scale
 
         targets = [
-            0.0 + pitch_wander,
-            7.0 * semitone + pitch_wander * 0.65,
-            12.0 * semitone + pitch_wander * 0.42,
+            (root_semi + voice_offsets[0]) * semitone + pitch_wander,
+            (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,
+            (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.42,
             0.025 + 0.165 * (0.62 * x + 0.23 * spread + 0.15 * activity),
             0.015 + 0.185 * (0.50 * mean_distance + 0.25 * count + 0.25 * activity),
             0.020 + 0.145 * (0.45 * y + 0.30 * spread + 0.25 * activity),
@@ -905,8 +943,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="poll camera and write status without opening ES-9 audio stream")
     p.add_argument("--vision-mode", choices=("aggregate", "people"), default="people", help="aggregate uses frame brightness/motion; people uses YOLO+ByteTrack scene features")
     p.add_argument("--yolo-model", default="yolo11n.pt", help="Ultralytics model name/path for --vision-mode people")
-    p.add_argument("--yolo-conf", type=float, default=0.35)
+    p.add_argument("--yolo-conf", type=float, default=0.25, help="YOLO confidence threshold; lower = more sensitive (default 0.25)")
     p.add_argument("--yolo-tracker", default="bytetrack.yaml")
+    p.add_argument("--tracker-max-missing", type=int, default=16, help="frames a track survives without re-detection before being culled (default 16 = 8s at camera_hz=2)")
+    p.add_argument("--tracker-match-threshold", type=float, default=0.24, help="centroid distance threshold for nearest-neighbor re-matching")
     p.add_argument("--preview-hz", type=float, default=2.0, help="annotated preview write rate in people mode; <=0 disables")
     return p
 
@@ -919,7 +959,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     preview_path = Path(args.preview_path) if args.preview_path and args.preview_hz > 0 else None
     feature_tracker = CameraFeatureTracker()
     aggregate_mapper = LisbonSwnMapper(max_cv=args.max_cv, smoothing_hz=args.smoothing_hz)
-    person_tracker = PersonSceneTracker(stillness_deadband=args.stillness_deadband)
+    person_tracker = PersonSceneTracker(
+        max_missing=args.tracker_max_missing,
+        match_threshold=args.tracker_match_threshold,
+        stillness_deadband=args.stillness_deadband,
+    )
     human_mapper = HumanAwareSwnMapper(max_cv=args.max_cv, smoothing_hz=args.smoothing_hz)
     initial_scene = person_tracker.update([], frame_size=(1, 1), dt=0.0)
     initial_cv = (
@@ -927,6 +971,48 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.vision_mode == "people"
         else aggregate_mapper.step(brightness=0.0, motion=0.0, centroid_x=0.5, centroid_y=0.5, dt=0.0)
     )
+
+    # Live profile poller — reads heuristic_profile.json once per second and
+    # pushes the resolved chord block into both mappers. Slow loop owns the
+    # chord; fast loop slews to the new V/oct targets smoothly via
+    # smoothing_hz. If the profile is missing, malformed, or expired, the
+    # mappers fall back to the hardcoded open-fifth.
+    try:
+        from audio.chord_palette import resolve_chord  # type: ignore
+    except Exception:
+        resolve_chord = None  # bridge still works without the palette module
+
+    profile_path = status_path.parent / "heuristic_profile.json"
+    profile_state: dict[str, Any] = {"mtime": 0.0, "chord": None}
+
+    def poll_profile_loop() -> None:
+        while not stop.is_set():
+            try:
+                stat = profile_path.stat()
+                if stat.st_mtime != profile_state["mtime"]:
+                    profile_state["mtime"] = stat.st_mtime
+                    data = json.loads(profile_path.read_text(encoding="utf-8"))
+                    expires_at = data.get("expires_at")
+                    expired = False
+                    if isinstance(expires_at, str):
+                        try:
+                            expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                            expired = datetime.now(tz=timezone.utc) > expiry
+                        except Exception:
+                            expired = False
+                    if not expired and resolve_chord is not None:
+                        chord = resolve_chord(data.get("chord"))
+                        profile_state["chord"] = chord
+                        aggregate_mapper.set_chord(chord)
+                        human_mapper.set_chord(chord)
+                    else:
+                        profile_state["chord"] = None
+                        aggregate_mapper.set_chord(None)
+                        human_mapper.set_chord(None)
+            except (OSError, json.JSONDecodeError):
+                # No profile yet, or unreadable — mappers keep last good chord.
+                pass
+            stop.wait(1.0)
     detector: YoloByteTrackPersonDetector | None = None
     lock = threading.Lock()
     stop = threading.Event()
@@ -1020,8 +1106,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     camera_thread = threading.Thread(target=camera_loop, name="camera-cv-loop", daemon=True)
     status_thread = threading.Thread(target=status_loop, name="status-json-loop", daemon=True)
+    profile_thread = threading.Thread(target=poll_profile_loop, name="heuristic-profile-poll", daemon=True)
     camera_thread.start()
     status_thread.start()
+    profile_thread.start()
 
     print("Lisbon SWN camera soundscape")
     print(f"  camera: {args.camera_url}")
