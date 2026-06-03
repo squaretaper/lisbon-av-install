@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Lisbon Audio Probe. AVFoundation mic capture from the Anker C200,
+     vDSP FFT analysis, status JSON + HTTP on :8767.
+     TCC mic grant lives in ~/Library/Application Support/com.apple.TCC/TCC.db
+     and must include a valid csreq blob for ai.ren.lisbon.audio-probe. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.ganchitecture.lisbon-audio-probe</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/open</string>
+    <string>-W</string>
+    <string>/Users/ganchitecture/code/lisbon-av-install/audio/audio_probe/LisbonAudioProbe.app</string>
+    <string>--args</string>
+    <string>--status-path</string>
+    <string>/Users/ganchitecture/code/lisbon-av-install/audio/runtime/room_audio_probe_status.json</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-audio-probe.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-audio-probe.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>

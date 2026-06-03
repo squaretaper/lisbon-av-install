@@ -24,6 +24,7 @@ action="${1:-install}"
 
 agents=(
   "ai.ganchitecture.lisbon-camera-probe"
+  "ai.ganchitecture.lisbon-audio-probe"
   "ai.ganchitecture.lisbon-swn-bridge"
   "ai.ganchitecture.lisbon-esp32-sync"
   "ai.ganchitecture.lisbon-reflective-reviewer"
