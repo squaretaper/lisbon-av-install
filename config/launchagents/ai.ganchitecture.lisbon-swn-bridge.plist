@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Lisbon SWN camera audio + CV + serial bridge. Realtime fast loop.
+     Depends on:
+       - LisbonCameraProbe LaunchAgent serving http://127.0.0.1:8765/frame.jpg
+       - ES-9 connected via USB
+     Logs to ~/Library/Logs/lisbon-swn-bridge*.log -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.ganchitecture.lisbon-swn-bridge</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/ganchitecture/code/lisbon-av-install/audio/run_swn_camera_soundscape.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/ganchitecture/code/lisbon-av-install</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-swn-bridge.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ganchitecture/Library/Logs/lisbon-swn-bridge.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>LISBON_YOLO_MODEL</key>
+    <string>yolo11n-pose.pt</string>
+    <key>LISBON_CAMERA_URL</key>
+    <string>http://127.0.0.1:8765/frame.jpg</string>
+  </dict>
+</dict>
+</plist>
