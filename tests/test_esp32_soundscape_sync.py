@@ -19,7 +19,11 @@ def test_light_bridge_defaults_are_low_latency_but_bounded():
 
     assert args.interval <= 0.025
     assert args.serial_delay <= 0.001
-    assert args.max_brightness_steps <= 6
+    # 6/4: bumped 6 -> 12 so strobe brightness 255 can land from any chase
+    # baseline in a single status update (delta of up to 160 brightness
+    # units = 10 +/- commands). Still bounded so a runaway target can't
+    # spam the serial port indefinitely.
+    assert args.max_brightness_steps <= 12
     assert args.max_param_steps <= 6
 
 
