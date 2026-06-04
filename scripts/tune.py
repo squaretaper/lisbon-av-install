@@ -47,6 +47,14 @@ ALLOWED_KEYS = {
     "browse_rate_max_hz",
     "cv7_hold_ms",
     "cv7_release_ms",
+    "movement_source",
+}
+
+# Keys that take a string value (must NOT be coerced to float). Everything
+# else is treated as a numeric scalar.
+STRING_KEYS = {"movement_source"}
+STRING_KEY_ALLOWED_VALUES: dict[str, set[str]] = {
+    "movement_source": {"bbox", "pose"},
 }
 
 
@@ -120,7 +128,18 @@ def apply(pairs: list[str]) -> None:
             print(f"unknown key '{key}' — allowed: {sorted(ALLOWED_KEYS)}", file=sys.stderr)
             sys.exit(2)
         try:
-            tune[key] = float(value_str)
+            if key in STRING_KEYS:
+                normalised = value_str.lower().strip()
+                allowed = STRING_KEY_ALLOWED_VALUES.get(key)
+                if allowed and normalised not in allowed:
+                    print(
+                        f"value '{value_str}' for '{key}' not in allowed set {sorted(allowed)}",
+                        file=sys.stderr,
+                    )
+                    sys.exit(2)
+                tune[key] = normalised
+            else:
+                tune[key] = float(value_str)
         except ValueError:
             print(f"value '{value_str}' for '{key}' is not a float", file=sys.stderr)
             sys.exit(2)

@@ -89,11 +89,17 @@ class CameraFeatures:
 
 @dataclass(frozen=True)
 class PersonObservation:
-    """One raw person detection from YOLO/ByteTrack."""
+    """One raw person detection from YOLO/ByteTrack.
+
+    `keypoints` is an optional dict {kpt_idx: (x_norm, y_norm, conf)} for
+    pose-model detectors (yolo11n-pose etc). None for bbox-only models.
+    Coordinates are normalised to [0,1] using the frame size at detect time.
+    """
 
     track_id: int | None
     bbox_xyxy: tuple[float, float, float, float]
     confidence: float = 1.0
+    keypoints: dict[int, tuple[float, float, float]] | None = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +143,51 @@ class _TrackMemory:
     distance: float
     age: int = 0
     missing: int = 0
+    # 6/4 r17: pose keypoints from the previous frame. Used by the
+    # pose-based movement source to compute max keypoint displacement.
+    # None when the detector is bbox-only or no keypoints were confident.
+    keypoints: dict[int, tuple[float, float, float]] | None = None
+
+
+# 6/4 r17: movement source selector. "bbox" is the pre-existing behaviour
+# (max planar/distance delta of the bbox). "pose" reads keypoint deltas
+# from the yolo pose model. Wired through PersonSceneTracker.set_tuning
+# so the operator can flip live without a bridge restart.
+MOVEMENT_SOURCE_BBOX = "bbox"
+MOVEMENT_SOURCE_POSE = "pose"
+_VALID_MOVEMENT_SOURCES = {MOVEMENT_SOURCE_BBOX, MOVEMENT_SOURCE_POSE}
+
+# Keypoints we trust for "gesture" motion. Hands, feet, head. Skip the
+# torso (shoulders/hips) because they barely translate during a wave;
+# skip eyes/ears because head-pose noise dominates the small motion.
+# Reference: ultralytics COCO-17 keypoint ordering.
+_GESTURE_KEYPOINTS = {0, 9, 10, 15, 16}  # nose, L/R wrist, L/R ankle
+_KEYPOINT_MIN_CONFIDENCE = 0.4
+
+
+def _max_keypoint_delta(
+    previous: dict[int, tuple[float, float, float]],
+    current: dict[int, tuple[float, float, float]],
+) -> float:
+    """Maximum positional delta across confident gesture keypoints.
+
+    Inputs are dicts of {kpt_idx: (x_norm, y_norm, conf)}. Only keypoints
+    in _GESTURE_KEYPOINTS that appear in both frames with conf above
+    _KEYPOINT_MIN_CONFIDENCE contribute. Returns 0.0 when no shared
+    confident keypoints — caller falls back to bbox delta.
+    """
+    best = 0.0
+    for kpt_idx in _GESTURE_KEYPOINTS:
+        if kpt_idx not in previous or kpt_idx not in current:
+            continue
+        px, py, pc = previous[kpt_idx]
+        cx, cy, cc = current[kpt_idx]
+        if pc < _KEYPOINT_MIN_CONFIDENCE or cc < _KEYPOINT_MIN_CONFIDENCE:
+            continue
+        delta = math.hypot(cx - px, cy - py)
+        if delta > best:
+            best = delta
+    return best
 
 
 class PersonSceneTracker:
@@ -147,14 +198,17 @@ class PersonSceneTracker:
     randomly reassign every frame.
     """
 
-    def __init__(self, max_missing: int = 8, match_threshold: float = 0.24, stillness_deadband: float = 0.03) -> None:
+    def __init__(self, max_missing: int = 8, match_threshold: float = 0.24, stillness_deadband: float = 0.03, movement_source: str = MOVEMENT_SOURCE_BBOX) -> None:
         self.max_missing = max(0, int(max_missing))
         self.match_threshold = float(match_threshold)
         self.stillness_deadband = max(0.0, float(stillness_deadband))
+        if movement_source not in _VALID_MOVEMENT_SOURCES:
+            raise ValueError(f"movement_source must be one of {sorted(_VALID_MOVEMENT_SOURCES)}, got {movement_source!r}")
+        self.movement_source = movement_source
         self._tracks: dict[int, _TrackMemory] = {}
         self._next_id = 1
 
-    def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None) -> None:
+    def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None, movement_source: str | None = None) -> None:
         """Hot-update detector thresholds from the profile poller.
 
         Operator 6/4 r13: source-PR-per-knob was costing ~10s of CV freeze
@@ -175,6 +229,13 @@ class PersonSceneTracker:
             if abs(new_val - self.match_threshold) > 1e-6:
                 print(f"[poll-tune] match_threshold {self.match_threshold:.4f} -> {new_val:.4f}", flush=True)
                 self.match_threshold = new_val
+        if movement_source is not None:
+            new_val = str(movement_source).lower().strip()
+            if new_val not in _VALID_MOVEMENT_SOURCES:
+                print(f"[poll-tune] movement_source {new_val!r} ignored — valid values: {sorted(_VALID_MOVEMENT_SOURCES)}", flush=True)
+            elif new_val != self.movement_source:
+                print(f"[poll-tune] movement_source {self.movement_source!r} -> {new_val!r}", flush=True)
+                self.movement_source = new_val
 
     def update(
         self,
@@ -221,18 +282,33 @@ class PersonSceneTracker:
                 movement = 0.0
                 age = 1
             else:
-                # 6/4 r11: include distance (bbox area proxy) delta in the
-                # movement signal. Pre-r11 we only watched bbox center
-                # x/y delta. A person walking STRAIGHT TOWARD the camera
-                # barely moves their bbox center (centered on torso, doesn't
-                # translate laterally) but their bbox grows substantially —
-                # which the bridge tracked in `distance` but never folded
-                # into movement. CV7 stayed at 0 for forward-walking persons.
-                # Now: composite = max(planar_delta, distance_delta) so
-                # either dimension can fire the gate.
-                planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
-                distance_delta = abs(metrics["distance"] - previous.distance)
-                delta = max(planar_delta, distance_delta)
+                # 6/4 r17: movement source is selectable. POSE reads max
+                # keypoint displacement (wrist, ankle, head) — catches
+                # gesture without false-firing on slow walking. BBOX is
+                # the historical signal (planar+distance delta), good
+                # for whole-body translation but blind to hand waves.
+                use_pose = (
+                    self.movement_source == MOVEMENT_SOURCE_POSE
+                    and obs.keypoints is not None
+                    and previous.keypoints is not None
+                )
+                if use_pose:
+                    assert obs.keypoints is not None and previous.keypoints is not None
+                    delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
+                    if delta == 0.0:
+                        # No shared confident keypoints (e.g. person turned
+                        # away, occluded limbs) — fall back to bbox signal
+                        # so we don't silently mute movement.
+                        planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
+                        distance_delta = abs(metrics["distance"] - previous.distance)
+                        delta = max(planar_delta, distance_delta)
+                else:
+                    # 6/4 r11: composite = max(planar_delta, distance_delta).
+                    # Walking toward camera shows up in distance even when
+                    # planar barely shifts.
+                    planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
+                    distance_delta = abs(metrics["distance"] - previous.distance)
+                    delta = max(planar_delta, distance_delta)
                 if delta <= self.stillness_deadband:
                     # Below deadband — gate movement signal to absorb YOLO
                     # bbox jitter, but always advance position metrics (see
@@ -254,6 +330,7 @@ class PersonSceneTracker:
                 distance=metrics["distance"],
                 age=age,
                 missing=0,
+                keypoints=obs.keypoints,
             )
             active_ids.add(track_id)
             active_tracks.append(
@@ -438,8 +515,20 @@ def _to_numpy(value: Any) -> np.ndarray | None:
     return np.asarray(value)
 
 
-def observations_from_yolo_result(result: Any, *, min_confidence: float = 0.35) -> list[PersonObservation]:
-    """Extract person observations from one Ultralytics YOLO/ByteTrack result."""
+def observations_from_yolo_result(
+    result: Any,
+    *,
+    min_confidence: float = 0.35,
+    frame_size: tuple[int, int] | None = None,
+) -> list[PersonObservation]:
+    """Extract person observations from one Ultralytics YOLO/ByteTrack result.
+
+    When the result carries a `keypoints` attribute (pose models like
+    yolo11n-pose.pt), each observation also includes a normalised keypoint
+    dict {kpt_idx: (x_norm, y_norm, conf)}. `frame_size` (width, height)
+    is required to normalise keypoint coords; if not provided keypoints
+    are skipped silently and detector falls back to bbox-only behaviour.
+    """
 
     boxes = getattr(result, "boxes", None)
     if boxes is None:
@@ -452,6 +541,16 @@ def observations_from_yolo_result(result: Any, *, min_confidence: float = 0.35) 
     conf = _to_numpy(getattr(boxes, "conf", None))
     cls = _to_numpy(getattr(boxes, "cls", None))
     ids = _to_numpy(getattr(boxes, "id", None))
+
+    # Pose models attach keypoints as result.keypoints.xy (n, 17, 2) and
+    # result.keypoints.conf (n, 17). Bbox models return None for this.
+    kpts_xy = None
+    kpts_conf = None
+    kp_attr = getattr(result, "keypoints", None)
+    if kp_attr is not None and frame_size is not None:
+        kpts_xy = _to_numpy(getattr(kp_attr, "xy", None))
+        kpts_conf = _to_numpy(getattr(kp_attr, "conf", None))
+
     observations: list[PersonObservation] = []
 
     for i, raw_bbox in enumerate(np.asarray(xyxy).reshape((-1, 4))):
@@ -464,7 +563,38 @@ def observations_from_yolo_result(result: Any, *, min_confidence: float = 0.35) 
         else:
             track_id = int(ids[i])
         bbox = tuple(round(float(v), 3) for v in raw_bbox)
-        observations.append(PersonObservation(track_id=track_id, bbox_xyxy=bbox, confidence=round(confidence, 6)))
+
+        keypoints = None
+        if kpts_xy is not None and kpts_conf is not None and i < len(kpts_xy) and frame_size is not None:
+            fw, fh = frame_size
+            fw = max(1, int(fw))
+            fh = max(1, int(fh))
+            kpts: dict[int, tuple[float, float, float]] = {}
+            person_xy = np.asarray(kpts_xy[i])
+            person_conf = np.asarray(kpts_conf[i])
+            for kpt_idx in range(min(len(person_xy), len(person_conf))):
+                x, y = person_xy[kpt_idx]
+                c = float(person_conf[kpt_idx])
+                # 0,0 is the placeholder ultralytics uses for missing
+                # keypoints. Skip those plus anything below confidence.
+                if c <= 0.0 or (x == 0.0 and y == 0.0):
+                    continue
+                kpts[int(kpt_idx)] = (
+                    float(x) / fw,
+                    float(y) / fh,
+                    round(c, 4),
+                )
+            if kpts:
+                keypoints = kpts
+
+        observations.append(
+            PersonObservation(
+                track_id=track_id,
+                bbox_xyxy=bbox,
+                confidence=round(confidence, 6),
+                keypoints=keypoints,
+            )
+        )
     return observations
 
 
@@ -699,7 +829,11 @@ class YoloByteTrackPersonDetector:
         )
         if not results:
             return []
-        return observations_from_yolo_result(results[0], min_confidence=self.confidence)
+        return observations_from_yolo_result(
+            results[0],
+            min_confidence=self.confidence,
+            frame_size=image.size,
+        )
 
 
 @dataclass(frozen=True)
@@ -1634,6 +1768,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             person_tracker.set_tuning(
                 stillness_deadband=tune.get("stillness_deadband"),
                 match_threshold=tune.get("tracker_match_threshold"),
+                movement_source=tune.get("movement_source"),
             )
         except Exception as exc:
             print(f"[poll] tune tracker error: {exc!r}", flush=True)
