@@ -160,12 +160,19 @@ MOVEMENT_SOURCE_BBOX = "bbox"
 MOVEMENT_SOURCE_POSE = "pose"
 _VALID_MOVEMENT_SOURCES = {MOVEMENT_SOURCE_BBOX, MOVEMENT_SOURCE_POSE}
 
-# Keypoints we trust for "gesture" motion. Hands, feet, head. Skip the
-# torso (shoulders/hips) because they barely translate during a wave;
-# skip eyes/ears because head-pose noise dominates the small motion.
+# Keypoints we trust for "gesture" motion. Hands, feet, head, and elbows.
+# Skip the torso (shoulders/hips) because they barely translate during a
+# wave; skip eyes/ears because head-pose noise dominates the small motion.
+# 6/4 r19: added elbows (7, 8) — they have rock-solid confidence and the
+# elbow swings further than the wrist during a hand-raise (rotation point
+# is the shoulder, so elbow has a bigger arc). Adding them dramatically
+# improves arm-raise / wave detection.
 # Reference: ultralytics COCO-17 keypoint ordering.
-_GESTURE_KEYPOINTS = {0, 9, 10, 15, 16}  # nose, L/R wrist, L/R ankle
-_KEYPOINT_MIN_CONFIDENCE = 0.4
+_GESTURE_KEYPOINTS = {0, 7, 8, 9, 10, 15, 16}  # nose, L/R elbow, L/R wrist, L/R ankle
+# 6/4 r19: keypoints below this drop out (especially ankles when the
+# camera is mounted high and feet leave frame). Lowering from 0.4 to
+# 0.3 catches more ankle frames without admitting hallucinations.
+_KEYPOINT_MIN_CONFIDENCE = 0.3
 
 
 def _max_keypoint_delta(
@@ -618,7 +625,8 @@ _COCO_SKELETON_EDGES: tuple[tuple[int, int], ...] = (
 # Subset of keypoints we highlight as solid dots in the overlay — the
 # ones the pose movement source actually consults. Everything else gets
 # drawn as a small ring so the operator can still see the skeleton.
-_HIGHLIGHTED_KEYPOINTS = {0, 9, 10, 15, 16}  # nose, L/R wrist, L/R ankle
+# 6/4 r19: includes elbows now (matches _GESTURE_KEYPOINTS).
+_HIGHLIGHTED_KEYPOINTS = {0, 7, 8, 9, 10, 15, 16}  # nose, L/R elbow, L/R wrist, L/R ankle
 
 
 def _draw_skeleton(
@@ -651,7 +659,10 @@ def _draw_skeleton(
         if a in pixels and b in pixels:
             draw.line((pixels[a], pixels[b]), fill=color, width=bone_width)
     # Keypoint markers
-    dot_r = max(2, line_w + 1)
+    # 6/4 r19: highlighted keypoint dots used to be barely visible (~5px
+    # on a 720p frame). Bumped 70% so wrist/elbow markers POP on the
+    # preview — operator should be able to spot a hand wave at a glance.
+    dot_r = max(4, int(round((line_w + 1) * 1.7)))
     ring_r = max(2, line_w)
     for kpt_idx, (px, py) in pixels.items():
         if kpt_idx in _HIGHLIGHTED_KEYPOINTS:
