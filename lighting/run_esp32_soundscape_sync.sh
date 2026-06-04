@@ -20,6 +20,6 @@ exec python -m lighting.lisbon_esp32_soundscape_sync \
   --interval "${LISBON_ESP32_INTERVAL:-0.02}" \
   --duration "${LISBON_ESP32_DURATION:-0}" \
   --initial-packet-span "${LISBON_ESP32_PACKET_SPAN:-20}" \
-  --max-brightness-steps "${LISBON_ESP32_BRIGHT_STEPS:-6}" \
+  --max-brightness-steps "${LISBON_ESP32_BRIGHT_STEPS:-12}" \
   --max-param-steps "${LISBON_ESP32_PARAM_STEPS:-6}" \
   --serial-delay "${LISBON_ESP32_SERIAL_DELAY:-0.001}"

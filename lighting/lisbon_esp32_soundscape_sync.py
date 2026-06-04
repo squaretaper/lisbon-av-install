@@ -257,18 +257,15 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     ), 0.0, 1.0)
     strobe_active = high_band_burst or bright_transient or mid_high_glitch or hard_high_frequency
 
-    # PRIORITY 1: CV7 glitch direct strobe
+    # PRIORITY 1: CV7 glitch direct strobe — full brightness (operator 6/4)
     if glitch_trigger >= 0.40:
-        strobe_brightness = int(round(_clamp(208 + 40 * glitch_trigger, 208, 248) / 16.0) * 16)
-        return LightState(mode="2", brightness=strobe_brightness, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f}")
-    # PRIORITY 2: Mic transient direct strobe
+        return LightState(mode="2", brightness=255, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f}")
+    # PRIORITY 2: Mic transient direct strobe — full brightness
     if mic_active and mic_transient >= 0.45:
-        strobe_brightness = int(round(_clamp(208 + 40 * mic_transient + 16 * mic_high_band, 208, 248) / 16.0) * 16)
-        return LightState(mode="2", brightness=strobe_brightness, reason=f"mic transient strobe {mic_transient:.2f} peak={mic_peak:.3f}")
-    # PRIORITY 3: legacy audio-spectrum strobe (ES-9 return content)
+        return LightState(mode="2", brightness=255, reason=f"mic transient strobe {mic_transient:.2f} peak={mic_peak:.3f}")
+    # PRIORITY 3: legacy audio-spectrum strobe — full brightness
     if audio_present and strobe_active and strobe_score >= 0.16:
-        strobe_brightness = int(round(_clamp(192 + 56 * strobe_score + 26 * high_band + 18 * transient, 208, 248) / 16.0) * 16)
-        return LightState(mode="2", brightness=strobe_brightness, reason=f"audio glitch strobe {strobe_score:.2f} band={high_band:.2f} centroid={spectral_centroid:.0f}Hz trans={transient:.2f}")
+        return LightState(mode="2", brightness=255, reason=f"audio glitch strobe {strobe_score:.2f} band={high_band:.2f} centroid={spectral_centroid:.0f}Hz trans={transient:.2f}")
     if (not audio_present) and soundscape_glitch >= 0.52:
         return LightState(mode="2", brightness=max(112, brightness), reason=f"soundscape glitch {soundscape_glitch:.2f}")
     if audio_present and (freq_hz >= 1400 or high_freq >= 0.28):
@@ -550,7 +547,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--initial-chase-ms", type=int, default=96)
     p.add_argument("--initial-pulse-depth", type=int, default=42)
     p.add_argument("--initial-packet-span", type=int, default=20)
-    p.add_argument("--max-brightness-steps", type=int, default=6)
+    p.add_argument("--max-brightness-steps", type=int, default=12)
     p.add_argument("--max-param-steps", type=int, default=6)
     p.add_argument("--serial-delay", type=float, default=0.001)
     return p
