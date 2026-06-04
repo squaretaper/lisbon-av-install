@@ -182,12 +182,16 @@ MOVEMENT_SOURCE_POSE = "pose"
 MOVEMENT_SOURCE_POSE_RAISE = "pose_raise"
 MOVEMENT_SOURCE_BBOX_RAISE = "bbox_raise"
 MOVEMENT_SOURCE_ARM_EXTENSION = "arm_extension"
+# 6/4 r24: combined "arm extension OR fast pose motion" — max of the
+# two signals so a raised arm OR a fast wave both fire CV7.
+MOVEMENT_SOURCE_EXTENSION_OR_VELOCITY = "extension_or_velocity"
 _VALID_MOVEMENT_SOURCES = {
     MOVEMENT_SOURCE_BBOX,
     MOVEMENT_SOURCE_POSE,
     MOVEMENT_SOURCE_POSE_RAISE,
     MOVEMENT_SOURCE_BBOX_RAISE,
     MOVEMENT_SOURCE_ARM_EXTENSION,
+    MOVEMENT_SOURCE_EXTENSION_OR_VELOCITY,
 }
 
 # Keypoints we trust for "gesture" motion. Hands, feet, head, and elbows.
@@ -528,6 +532,25 @@ class PersonSceneTracker:
                     movement = 0.0
                 else:
                     movement = float(raise_mag)
+                age = previous.age + 1 if previous is not None else 1
+            elif self.movement_source == MOVEMENT_SOURCE_EXTENSION_OR_VELOCITY:
+                # 6/4 r24: posture (arm extension) OR fast pose motion.
+                # Postural signal works on frame 1; velocity needs previous.
+                # Output is max of the two so either path fires.
+                postural = (
+                    _arm_extension_magnitude(obs.keypoints)
+                    if obs.keypoints is not None else 0.0
+                )
+                velocity = 0.0
+                if previous is not None and obs.keypoints is not None and previous.keypoints is not None:
+                    delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
+                    if delta > self.stillness_deadband:
+                        velocity = _clamp01(delta / max(0.03, dt * 0.65))
+                combined = max(postural, velocity)
+                if combined <= self.stillness_deadband:
+                    movement = 0.0
+                else:
+                    movement = float(combined)
                 age = previous.age + 1 if previous is not None else 1
             elif previous is None:
                 movement = 0.0
