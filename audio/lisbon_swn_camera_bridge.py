@@ -115,6 +115,9 @@ class PersonTrack:
     distance: float
     movement: float
     age: int
+    # 6/4 r18: keypoints carried to renderers so the preview overlay can
+    # draw a skeleton. None when the bridge is using a bbox-only detector.
+    keypoints: dict[int, tuple[float, float, float]] | None = None
 
 
 @dataclass(frozen=True)
@@ -346,6 +349,7 @@ class PersonSceneTracker:
                     distance=metrics["distance"],
                     movement=movement,
                     age=age,
+                    keypoints=obs.keypoints,
                 )
             )
 
@@ -474,6 +478,7 @@ def quiet_person_scene(scene: PersonScene) -> PersonScene:
                 distance=track.distance,
                 movement=0.0,
                 age=track.age,
+                keypoints=track.keypoints,
             )
             for track in scene.tracks
         ],
@@ -598,6 +603,63 @@ def observations_from_yolo_result(
     return observations
 
 
+# 6/4 r18: COCO-17 skeleton edges. Each tuple is a pair of keypoint
+# indices that form a bone. Ordered to draw torso/limb outline cleanly.
+_COCO_SKELETON_EDGES: tuple[tuple[int, int], ...] = (
+    (5, 7), (7, 9),       # left shoulder → elbow → wrist
+    (6, 8), (8, 10),      # right shoulder → elbow → wrist
+    (11, 13), (13, 15),   # left hip → knee → ankle
+    (12, 14), (14, 16),   # right hip → knee → ankle
+    (5, 6), (11, 12),     # shoulder line, hip line
+    (5, 11), (6, 12),     # torso sides
+    (0, 5), (0, 6),       # head to shoulders
+)
+
+# Subset of keypoints we highlight as solid dots in the overlay — the
+# ones the pose movement source actually consults. Everything else gets
+# drawn as a small ring so the operator can still see the skeleton.
+_HIGHLIGHTED_KEYPOINTS = {0, 9, 10, 15, 16}  # nose, L/R wrist, L/R ankle
+
+
+def _draw_skeleton(
+    draw: ImageDraw.ImageDraw,
+    keypoints: dict[int, tuple[float, float, float]],
+    width: int,
+    height: int,
+    color: tuple[int, int, int],
+    line_w: int,
+) -> None:
+    """Draw a COCO-17 skeleton overlay for a single track.
+
+    Keypoints below _KEYPOINT_MIN_CONFIDENCE are skipped. Gesture
+    keypoints (the same set the pose movement source watches) render
+    as filled circles; the rest render as outlined rings so the
+    operator can read at a glance which limbs are driving CV7.
+    """
+    # Pixel coords for confident keypoints only.
+    pixels: dict[int, tuple[int, int]] = {}
+    for kpt_idx, (x_norm, y_norm, conf) in keypoints.items():
+        if conf < _KEYPOINT_MIN_CONFIDENCE:
+            continue
+        px = int(round(x_norm * width))
+        py = int(round(y_norm * height))
+        if 0 <= px < width and 0 <= py < height:
+            pixels[kpt_idx] = (px, py)
+    # Bones
+    bone_width = max(1, line_w - 1)
+    for a, b in _COCO_SKELETON_EDGES:
+        if a in pixels and b in pixels:
+            draw.line((pixels[a], pixels[b]), fill=color, width=bone_width)
+    # Keypoint markers
+    dot_r = max(2, line_w + 1)
+    ring_r = max(2, line_w)
+    for kpt_idx, (px, py) in pixels.items():
+        if kpt_idx in _HIGHLIGHTED_KEYPOINTS:
+            draw.ellipse((px - dot_r, py - dot_r, px + dot_r, py + dot_r), fill=color)
+        else:
+            draw.ellipse((px - ring_r, py - ring_r, px + ring_r, py + ring_r), outline=color, width=1)
+
+
 def annotate_person_scene(
     image: Image.Image,
     scene: PersonScene,
@@ -631,6 +693,13 @@ def annotate_person_scene(
         cx = int(round(track.center_x * width))
         cy = int(round(track.center_y * height))
         draw.ellipse((cx - 3, cy - 3, cx + 3, cy + 3), outline=color, width=line_w)
+        # 6/4 r18: skeleton overlay when pose keypoints present. We draw
+        # confident gesture keypoints (wrists, ankles, head) plus a thin
+        # link line between them and the bbox centroid so the operator
+        # can see at a glance which limbs are driving CV7. Skip rendering
+        # entirely when the detector is bbox-only (track.keypoints is None).
+        if track.keypoints:
+            _draw_skeleton(draw, track.keypoints, width, height, color, line_w)
 
     summary = (
         f"people {scene.people_count}  activity {scene.activity:.2f}  "
