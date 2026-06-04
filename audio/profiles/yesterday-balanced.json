@@ -1,0 +1,43 @@
+{
+  "audio": {
+    "drone_bias": 0.4524,
+    "feedback_suppression": 0.5644,
+    "glitch_probability": 0.1396,
+    "high_band_strobe_threshold_scale": 0.8735
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.5818,
+    "sector_activity_weight": 0.4953,
+    "stillness_deadband_scale": 1.1184
+  },
+  "chord": {
+    "pitch_wander_scale": 0.99,
+    "root_semitones": 33.2,
+    "smoothing_hz": 0.58,
+    "transition_seconds": 30.0,
+    "voicing": "open_fifth"
+  },
+  "cv": {
+    "max_cv_scale": 1.0,
+    "movement_gate_ceiling_v": 4.6165,
+    "pitch_drift_scale": 0.5638
+  },
+  "family": "balanced",
+  "lights": {
+    "black_floor_bias": 0.2112,
+    "brightness_ceiling": 127.149,
+    "packet_complexity": 0.5004,
+    "strobe_ceiling": 210.388
+  },
+  "mode_bias": "balanced",
+  "profile_id": "yesterday-distilled-balanced",
+  "reason": "median chord block from 7 samples in family=balanced on 2026-06-03",
+  "scene": {
+    "avoid_repetition_seconds": 53.6012,
+    "density_target": 0.3767,
+    "silence_hold_seconds": 10.349
+  },
+  "schema": "lisbon.heuristic_profile.v1",
+  "source": "distilled_from_profile_history_2026-06-03",
+  "updated_at": "2026-06-04T08:18:55Z"
+}

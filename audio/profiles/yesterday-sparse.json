@@ -1,0 +1,43 @@
+{
+  "audio": {
+    "drone_bias": 0.6633,
+    "feedback_suppression": 0.8769,
+    "glitch_probability": 0.0605,
+    "high_band_strobe_threshold_scale": 1.1588
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.4748,
+    "sector_activity_weight": 0.5125,
+    "stillness_deadband_scale": 1.3753
+  },
+  "chord": {
+    "pitch_wander_scale": 0.62,
+    "root_semitones": 34.94,
+    "smoothing_hz": 0.29,
+    "transition_seconds": 30.0,
+    "voicing": "deep_fifth"
+  },
+  "cv": {
+    "max_cv_scale": 0.9546,
+    "movement_gate_ceiling_v": 3.75,
+    "pitch_drift_scale": 0.4438
+  },
+  "family": "sparse",
+  "lights": {
+    "black_floor_bias": 0.5525,
+    "brightness_ceiling": 113.3784,
+    "packet_complexity": 0.4257,
+    "strobe_ceiling": 195.1392
+  },
+  "mode_bias": "sparse_drone",
+  "profile_id": "yesterday-distilled-sparse",
+  "reason": "median chord block from 6 samples in family=sparse on 2026-06-03",
+  "scene": {
+    "avoid_repetition_seconds": 110.7141,
+    "density_target": 0.1031,
+    "silence_hold_seconds": 17.795
+  },
+  "schema": "lisbon.heuristic_profile.v1",
+  "source": "distilled_from_profile_history_2026-06-03",
+  "updated_at": "2026-06-04T08:38:57Z"
+}

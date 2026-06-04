@@ -28,6 +28,7 @@ agents=(
   "ai.ganchitecture.lisbon-swn-bridge"
   "ai.ganchitecture.lisbon-esp32-sync"
   "ai.ganchitecture.lisbon-reflective-reviewer"
+  "ai.ganchitecture.lisbon-realtime-chord-driver"
 )
 
 print_status() {
