@@ -18,7 +18,7 @@ exec python audio/lisbon_swn_camera_bridge.py \
   --camera-hz "${LISBON_CAMERA_HZ:-5}" \
   --status-hz "${LISBON_STATUS_HZ:-60}" \
   --blocksize "${LISBON_BLOCKSIZE:-128}" \
-  --stillness-deadband "${LISBON_STILLNESS_DEADBAND:-0.03}" \
+  --stillness-deadband "${LISBON_STILLNESS_DEADBAND:-0.008}" \
   --stillness-frame-motion "${LISBON_STILLNESS_FRAME_MOTION:-0.03}" \
   --preview-hz "${LISBON_PREVIEW_HZ:-10}" \
   --yolo-model "${LISBON_YOLO_MODEL:-yolo11n.pt}" \
