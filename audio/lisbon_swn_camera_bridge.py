@@ -171,7 +171,29 @@ class PersonSceneTracker:
 
         for obs in observations:
             metrics = self._observation_metrics(obs, frame_w, frame_h)
-            track_id = int(obs.track_id) if obs.track_id is not None else self._match_or_allocate(metrics["center_x"], metrics["center_y"], active_ids)
+            # 6/4 r12: when ByteTrack assigns an id we've never seen, try
+            # to inherit state from any nearby orphan track first. Without
+            # this, ByteTrack id churn (new id every few frames at dim
+            # range) makes EVERY new observation hit the "previous is
+            # None → movement = 0" path. We never see movement on the
+            # actual person because no single id persists long enough.
+            #
+            # The match is by centroid distance to any non-active track in
+            # _TrackMemory; if within match_threshold we re-use that track's
+            # state (renamed to the new ByteTrack id so the dict stays
+            # coherent with ByteTrack's view). Otherwise allocate a fresh
+            # row as before.
+            if obs.track_id is not None:
+                yolo_id = int(obs.track_id)
+                if yolo_id not in self._tracks:
+                    inherited_id = self._match_or_allocate(metrics["center_x"], metrics["center_y"], active_ids)
+                    if inherited_id != yolo_id and inherited_id in self._tracks:
+                        # Carry the orphan's memory under the new ByteTrack id
+                        self._tracks[yolo_id] = self._tracks.pop(inherited_id)
+                        self._tracks[yolo_id].id = yolo_id
+                track_id = yolo_id
+            else:
+                track_id = self._match_or_allocate(metrics["center_x"], metrics["center_y"], active_ids)
             previous = self._tracks.get(track_id)
             if previous is None:
                 movement = 0.0
