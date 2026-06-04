@@ -1,0 +1,43 @@
+{
+  "audio": {
+    "drone_bias": 0.4655,
+    "feedback_suppression": 0.7377,
+    "glitch_probability": 0.2052,
+    "high_band_strobe_threshold_scale": 0.9405
+  },
+  "camera": {
+    "movement_gate_sensitivity": 0.7472,
+    "sector_activity_weight": 0.5613,
+    "stillness_deadband_scale": 0.6528
+  },
+  "chord": {
+    "pitch_wander_scale": 1.12,
+    "root_semitones": 38.0,
+    "smoothing_hz": 0.41,
+    "transition_seconds": 30.0,
+    "voicing": "suspended_fourth"
+  },
+  "cv": {
+    "max_cv_scale": 0.8491,
+    "movement_gate_ceiling_v": 3.7801,
+    "pitch_drift_scale": 0.6114
+  },
+  "family": "wake",
+  "lights": {
+    "black_floor_bias": 0.209,
+    "brightness_ceiling": 180.0361,
+    "packet_complexity": 0.6594,
+    "strobe_ceiling": 216.7995
+  },
+  "mode_bias": "wake",
+  "profile_id": "yesterday-distilled-wake",
+  "reason": "median chord block from 9 samples in family=wake on 2026-06-03",
+  "scene": {
+    "avoid_repetition_seconds": 0.0,
+    "density_target": 0.4972,
+    "silence_hold_seconds": 4.4543
+  },
+  "schema": "lisbon.heuristic_profile.v1",
+  "source": "distilled_from_profile_history_2026-06-03",
+  "updated_at": "2026-06-03T20:02:32Z"
+}
