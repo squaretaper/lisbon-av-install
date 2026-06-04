@@ -1,13 +1,13 @@
 {
   "_meta": {
     "name": "lisbon-opening-night",
-    "description": "Tuned during installation on 6/4 opening day. Pose-based glitch with arm extension OR fast motion, browse at half speed, fast CV7 decay, proximity-driven white bloom.",
+    "description": "Tuned during installation on 6/4 opening day. Settled threshold after addressing strobe→camera feedback loop. extension_or_velocity at 0.65 — high enough that strobe-induced keypoint jitter does not retrigger CV7, low enough that deliberate gesture still fires.",
     "captured_at": "2026-06-04",
-    "movement_source_choice": "arm extension (top-down camera friendly) OR pose velocity (catches fast hand waves) — max of the two drives CV7",
+    "movement_source_choice": "arm extension (top-down friendly) OR pose velocity (catches fast waves) — max of the two drives CV7. Threshold 0.65 chosen empirically to break the strobe/camera/glitch feedback loop without killing real gesture detection.",
     "deploy_via": "cp config/presets/lisbon-opening-night.json audio/runtime/tune.json"
   },
   "movement_source": "extension_or_velocity",
-  "glitch_fire_threshold": 0.3,
+  "glitch_fire_threshold": 0.65,
   "cv7_hold_ms": 0.0,
   "cv7_release_ms": 150.0,
   "browse_rate_min_hz": 0.009,
