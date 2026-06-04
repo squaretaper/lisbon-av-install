@@ -177,20 +177,23 @@ class PersonSceneTracker:
                 movement = 0.0
                 age = 1
             else:
-                delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
+                # 6/4 r11: include distance (bbox area proxy) delta in the
+                # movement signal. Pre-r11 we only watched bbox center
+                # x/y delta. A person walking STRAIGHT TOWARD the camera
+                # barely moves their bbox center (centered on torso, doesn't
+                # translate laterally) but their bbox grows substantially —
+                # which the bridge tracked in `distance` but never folded
+                # into movement. CV7 stayed at 0 for forward-walking persons.
+                # Now: composite = max(planar_delta, distance_delta) so
+                # either dimension can fire the gate.
+                planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
+                distance_delta = abs(metrics["distance"] - previous.distance)
+                delta = max(planar_delta, distance_delta)
                 if delta <= self.stillness_deadband:
-                    # 6/4 r10 (operator: CV7 stopped firing during fast motion):
-                    # Below the deadband, suppress the movement signal so
-                    # detector noise doesn't fire CV7. But DO NOT lock the
-                    # metrics to `previous`. The pre-6/4 code did, which
-                    # meant the next frame's delta was compared against
-                    # the *original* anchor, not the current location.
-                    # Cumulative drift across many small frames was then
-                    # never visible — a person could walk halfway across
-                    # the room one slow step at a time and stay "still"
-                    # forever because each per-frame delta was below
-                    # deadband and the anchor never advanced. Now metrics
-                    # carry through fresh; only `movement` is gated.
+                    # Below deadband — gate movement signal to absorb YOLO
+                    # bbox jitter, but always advance position metrics (see
+                    # 6/4 r10) so cumulative drift across sub-deadband frames
+                    # eventually fires when it exceeds the threshold.
                     movement = 0.0
                 else:
                     movement = _clamp01(delta / max(0.03, dt * 0.65))
