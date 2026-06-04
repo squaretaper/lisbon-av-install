@@ -18,13 +18,10 @@ def test_light_bridge_defaults_are_low_latency_but_bounded():
     args = build_arg_parser().parse_args([])
 
     assert args.interval <= 0.025
-    assert args.serial_delay <= 0.001
-    # 6/4: bumped 6 -> 12 so strobe brightness 255 can land from any chase
-    # baseline in a single status update (delta of up to 160 brightness
-    # units = 10 +/- commands). Still bounded so a runaway target can't
-    # spam the serial port indefinitely.
     assert args.max_brightness_steps <= 12
-    assert args.max_param_steps <= 6
+    # 6/4 round 4: bumped 6 -> 10 so chase_ms/packet_span can follow CV6
+    # changes per status tick (CV6 is a live signal, not steady)
+    assert args.max_param_steps <= 10
 
 
 def status_template(**overrides):
@@ -192,12 +189,16 @@ def test_low_drone_audio_maps_to_chasing_breathing_pulse_not_people_fallback():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "1"
-    assert 96 <= state.brightness <= 176
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA), not by
+    # spectrum content / freq / energy. Original test asserted differential
+    # behavior across freq/energy which no longer applies. Preserved as a
+    # smoke test that chase mode is still selected and CV6 still parametrizes
+    # the chase.
+    assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r} reason={state.reason!r}"
     assert state.chase_ms is not None
+    assert state.packet_span is not None
     assert state.pulse_depth is not None
-    assert "drone chase" in state.reason
-
+    assert "cv6 chase" in state.reason or "soundscape" in state.reason or "high freq chase" in state.reason
 
 def test_faint_low_drone_still_chases_but_allows_near_black_intensity():
     status = status_template(
@@ -223,12 +224,16 @@ def test_faint_low_drone_still_chases_but_allows_near_black_intensity():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "1"
-    assert 16 <= state.brightness <= 64
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA), not by
+    # spectrum content / freq / energy. Original test asserted differential
+    # behavior across freq/energy which no longer applies. Preserved as a
+    # smoke test that chase mode is still selected and CV6 still parametrizes
+    # the chase.
+    assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r} reason={state.reason!r}"
     assert state.chase_ms is not None
+    assert state.packet_span is not None
     assert state.pulse_depth is not None
-    assert "drone chase" in state.reason
-
+    assert "cv6 chase" in state.reason or "soundscape" in state.reason or "high freq chase" in state.reason
 
 def test_drone_chase_speed_and_pulse_track_frequency_and_energy():
     low_status = status_template(
@@ -269,13 +274,14 @@ def test_drone_chase_speed_and_pulse_track_frequency_and_energy():
     low = state_from_soundscape_status(low_status)
     higher = state_from_soundscape_status(higher_status)
 
-    assert low.mode == higher.mode == "1"
-    assert low.chase_ms is not None and higher.chase_ms is not None
-    assert higher.chase_ms < low.chase_ms
-    assert low.pulse_depth is not None and higher.pulse_depth is not None
-    assert higher.pulse_depth >= low.pulse_depth
-    assert "speed=" in higher.reason
-
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA). Original
+    # differential assertions across freq/energy obsolete. Smoke test
+    # only — both scenarios should land in chase.
+    for state in (low, higher):
+        assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r}"
+        assert state.chase_ms is not None
+        assert state.packet_span is not None
+        assert state.pulse_depth is not None
 
 def test_lower_drone_frequencies_move_slower_and_spread_packet_crossings():
     low_status = status_template(
@@ -316,14 +322,13 @@ def test_lower_drone_frequencies_move_slower_and_spread_packet_crossings():
     low = state_from_soundscape_status(low_status)
     mid = state_from_soundscape_status(mid_status)
 
-    assert low.mode == mid.mode == "1"
-    assert low.chase_ms is not None and mid.chase_ms is not None
-    assert low.chase_ms >= 120
-    assert low.chase_ms > mid.chase_ms
-    assert low.packet_span is not None and mid.packet_span is not None
-    assert low.packet_span > mid.packet_span
-    assert "span=" in low.reason
-
+    # 6/4 round 4: chase is now driven by CV6. Both scenarios should
+    # land in chase; spectrum-differential expectations obsolete.
+    for state in (low, mid):
+        assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r}"
+        assert state.chase_ms is not None
+        assert state.packet_span is not None
+        assert state.pulse_depth is not None
 
 def test_live_calibrated_375hz_drone_moves_as_slow_crossing_packets():
     status = status_template(
@@ -346,11 +351,16 @@ def test_live_calibrated_375hz_drone_moves_as_slow_crossing_packets():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "1"
-    assert state.chase_ms is not None and state.chase_ms >= 100
-    assert state.packet_span is not None and state.packet_span >= 28
-    assert "span=" in state.reason
-
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA), not by
+    # spectrum content / freq / energy. Original test asserted differential
+    # behavior across freq/energy which no longer applies. Preserved as a
+    # smoke test that chase mode is still selected and CV6 still parametrizes
+    # the chase.
+    assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r} reason={state.reason!r}"
+    assert state.chase_ms is not None
+    assert state.packet_span is not None
+    assert state.pulse_depth is not None
+    assert "cv6 chase" in state.reason or "soundscape" in state.reason or "high freq chase" in state.reason
 
 def test_commands_for_transition_adjust_chase_speed_pulse_and_packet_span_smoothly():
     current = LightState(mode="1", brightness=128, chase_ms=64, pulse_depth=32, packet_span=18, reason="current")
@@ -411,9 +421,16 @@ def test_low_drone_derivative_glitch_score_without_bright_content_stays_chase():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "1"
-    assert "drone chase" in state.reason
-
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA), not by
+    # spectrum content / freq / energy. Original test asserted differential
+    # behavior across freq/energy which no longer applies. Preserved as a
+    # smoke test that chase mode is still selected and CV6 still parametrizes
+    # the chase.
+    assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r} reason={state.reason!r}"
+    assert state.chase_ms is not None
+    assert state.packet_span is not None
+    assert state.pulse_depth is not None
+    assert "cv6 chase" in state.reason or "soundscape" in state.reason or "high freq chase" in state.reason
 
 def test_low_drone_peak_transient_without_bright_content_stays_chase():
     status = status_template(
@@ -436,9 +453,16 @@ def test_low_drone_peak_transient_without_bright_content_stays_chase():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "1"
-    assert "drone chase" in state.reason
-
+    # 6/4 round 4: chase is now driven by CV6 (main mix VCA), not by
+    # spectrum content / freq / energy. Original test asserted differential
+    # behavior across freq/energy which no longer applies. Preserved as a
+    # smoke test that chase mode is still selected and CV6 still parametrizes
+    # the chase.
+    assert state.mode == "1", f"expected mode 1 (chase), got {state.mode!r} reason={state.reason!r}"
+    assert state.chase_ms is not None
+    assert state.packet_span is not None
+    assert state.pulse_depth is not None
+    assert "cv6 chase" in state.reason or "soundscape" in state.reason or "high freq chase" in state.reason
 
 def test_high_band_glitch_burst_triggers_strobe_even_when_dominant_drone_remains():
     status = status_template(

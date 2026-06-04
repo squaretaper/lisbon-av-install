@@ -274,38 +274,47 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     if audio_present and (freq_hz >= 1400 or high_freq >= 0.28):
         return LightState(mode="1", brightness=max(96, brightness), reason=f"audio high freq chase {freq_hz:.0f}Hz high={high_freq:.2f}")
     if audio_present:
-        if audio_energy < 0.04:
-            chase_ms, pulse_depth, packet_span = _drone_motion_params(freq_hz, audio_energy, low_band)
-            # Blend chord-correlated pulse rate when available. Chord pulse
-            # is the slow musical clock (root_semitones-derived); audio chase
-            # is the fast-loop reaction. 70/30 chord-dominant in faint drones
-            # so the visual stays locked to the chord even when audio is
-            # marginal.
-            if chord_pulse_ms is not None:
-                chase_ms = int(round(0.7 * chord_pulse_ms + 0.3 * chase_ms))
-            faint_brightness = int(round(_clamp(24 + 72 * audio_energy + 16 * low_band, 16, 64) / 16.0) * 16)
-            return LightState(
-                mode="1",
-                brightness=faint_brightness,
-                chase_ms=chase_ms,
-                pulse_depth=pulse_depth,
-                packet_span=packet_span,
-                reason=f"audio faint drone chase {freq_hz:.0f}Hz speed={chase_ms}ms span={packet_span}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else ""),
-            )
-        chase_ms, pulse_depth, packet_span = _drone_motion_params(freq_hz, audio_energy, low_band)
-        # Same chord-pulse blend, weighted slightly less (50/50) when audio
-        # is energetic — the room is loud, the chord still matters but the
-        # spectral content should drive faster motion.
+        # 6/4 round 4: chase brightness + density + rate driven DIRECTLY by
+        # CV6 (main mix VCA). Operator: "brightness and number of pixels in
+        # the chase related directly to es9 out 6" + "deterministic pattern
+        # for mode 1 has a cycle that isn't responsive to anything."
+        #
+        # The firmware advances chase phase as `t / stepMs`, so a steady
+        # stepMs produces a deterministic cycle (~6s traversal at stepMs=96).
+        # By driving stepMs from a live signal that's never steady in a
+        # populated room, the cycle period varies continuously and the
+        # visual stops being predictable. CV6 is that signal — it tracks
+        # presence/distance/activity through the slow VCA envelope, so it
+        # changes constantly as people move.
+        #
+        #   brightness:  32 + 192 * cv6   (CV6=0 dim 32, CV6=1 full 224)
+        #   packet_span:  8 + 36 * cv6    (CV6<0.45 sparse, >=0.45 dense
+        #                                  layer activates via firmware
+        #                                  denseDrone gate at span>=24)
+        #   chase_ms:   168 - 130 * cv6   (CV6=0 slow 168ms, CV6=1 fast 38ms)
+        #
+        # mic energy and audio_energy still fold into brightness as a top
+        # lift so the strip also tracks acoustic dynamics within whatever
+        # CV6 has set as the baseline.
+        cv6_brightness = int(round(_clamp(32 + 192 * main_mix_vca, 32, 224) / 16.0) * 16)
+        # Lift brightness by a fraction of mic_energy/audio_energy so loud
+        # passages punch through even when CV6 is mid-range.
+        envelope_lift = int(round(_clamp(48 * max(mic_energy, audio_energy), 0, 64) / 16.0) * 16)
+        cv6_brightness = int(_clamp(cv6_brightness + envelope_lift, 32, 240))
+        cv6_packet_span = int(round(_clamp(8 + 36 * main_mix_vca, 8, 44) / 2.0) * 2)
+        cv6_chase_ms = int(round(_clamp(168 - 130 * main_mix_vca, 38, 168) / 4.0) * 4)
+        cv6_pulse_depth = int(round(_clamp(40 + 56 * main_mix_vca, 40, 96) / 8.0) * 8)
+        # Chord pulse still blends in 30/70 (host-side chase is already
+        # responsive via CV6, so chord wins less weight than before).
         if chord_pulse_ms is not None:
-            chase_ms = int(round(0.5 * chord_pulse_ms + 0.5 * chase_ms))
-        drone_brightness = int(round(_clamp(24 + 128 * (audio_energy ** 0.85) + 28 * low_band, 16, 176) / 16.0) * 16)
+            cv6_chase_ms = int(round(0.4 * chord_pulse_ms + 0.6 * cv6_chase_ms))
         return LightState(
             mode="1",
-            brightness=drone_brightness,
-            chase_ms=chase_ms,
-            pulse_depth=pulse_depth,
-            packet_span=packet_span,
-            reason=f"audio drone chase {freq_hz:.0f}Hz speed={chase_ms}ms pulse={pulse_depth} span={packet_span} energy={audio_energy:.2f}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else ""),
+            brightness=cv6_brightness,
+            chase_ms=cv6_chase_ms,
+            pulse_depth=cv6_pulse_depth,
+            packet_span=cv6_packet_span,
+            reason=f"cv6 chase mix={main_mix_vca:.2f} bright={cv6_brightness} span={cv6_packet_span} speed={cv6_chase_ms}ms" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else "") + (f" mic={mic_energy:.2f}" if mic_active else ""),
         )
     if (not audio_present) and (soundscape_freq_hz >= 1400 or soundscape_high >= 0.45):
         return LightState(mode="1", brightness=max(80, brightness), reason=f"soundscape freq {soundscape_freq_hz:.0f}Hz high={soundscape_high:.2f}")
@@ -551,7 +560,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--initial-pulse-depth", type=int, default=42)
     p.add_argument("--initial-packet-span", type=int, default=20)
     p.add_argument("--max-brightness-steps", type=int, default=12)
-    p.add_argument("--max-param-steps", type=int, default=6)
+    p.add_argument("--max-param-steps", type=int, default=10)
     p.add_argument("--serial-delay", type=float, default=0.001)
     return p
 
