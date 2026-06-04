@@ -271,8 +271,14 @@ def test_still_frame_hold_decays_cv7_and_cv6_while_freezing_pitch_cvs():
             # moved more than ~15% of the diff, so 'after' can be within a
             # small tolerance of 'before' rather than strictly less than.
             assert after <= before + 0.01
+        elif index == 3:
+            # 6/4 r5: CV4 (BROWSE) is now an always-on evolving LFO; it
+            # keeps walking through stillness so the wavetable position
+            # never freezes when the room is still. Just assert the
+            # value stays in the valid CV band.
+            assert 0.0 <= after <= 0.30
         else:
-            # pitch + timbral CVs frozen
+            # pitch CVs frozen (CV1-3 + CV5 + CV8)
             assert math.isclose(after, before, abs_tol=1e-9)
 
 

@@ -810,8 +810,8 @@ class LisbonSwnMapper:
         mix_target = 0.00 + 1.00 * _clamp01(0.55 * brightness + 0.45 * activity)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
-            (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.7,
-            (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.45,
+            (root_semi + voice_offsets[1]) * semitone + pitch_wander,
+            (root_semi + voice_offsets[2]) * semitone + pitch_wander,
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             self.max_cv * (0.50 + 0.35 * (0.5 - centroid_y)),  # cv5 transpose (was dispersion 6/3)
             self.max_cv * mix_target,  # CV6 main mix VCA
@@ -847,6 +847,15 @@ class HumanAwareSwnMapper:
         self._presence_state: float = 0.0
         self._presence_smoothing_hz: float = 0.6
         self._current: list[float] | None = None
+        # CV4 (BROWSE) autonomous LFO state. Operator 6/4 r5: CV4 should be
+        # an always-on evolving signal that walks through the wavetable
+        # continuously, with rate modulated by presence. Empty room ->
+        # glacial drift (~0.04 Hz, full traversal ~25s). Full active room
+        # -> faster wander (~0.5 Hz, full traversal ~2s). Never stops.
+        # The walk is a phase-accumulating triangle so it's smooth and
+        # has no abrupt jumps; combined with the scene-driven rate this
+        # gives a wavetable position that never settles.
+        self._browse_phase: float = 0.0  # 0..1, accumulates with time*rate
         # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
         # root. None = use the historical hardcoded open-fifth.
         self._chord: dict | None = None
@@ -918,6 +927,58 @@ class HumanAwareSwnMapper:
         gate = _clamp01(movement * 2.6) ** 0.55
         return float(np.clip(self.max_cv * gate, 0.0, self.max_cv))
 
+    def _browse_target(self, scene: PersonScene, dt: float) -> float:
+        """CV4 (BROWSE) — always-on evolving wavetable position.
+
+        Operator 6/4 r5: CV4 should be a continuously walking signal whose
+        rate scales with presence, never settling. Empty room walks slowly
+        (~25s full traversal), full active room walks fast (~2s traversal).
+
+        Implementation: phase accumulator advancing every step by `rate*dt`,
+        wrapped 0..1, mapped through a triangle wave so the output reverses
+        smoothly at the ends instead of jumping. Output scaled to the
+        usable CV range 0.025..0.21 (same band as before so SWN's BROWSE
+        knob doesn't need a new bias).
+        """
+        # Density of room presence drives the rate. count_norm + activity
+        # so a still crowd already pushes rate up, plus movement pushes it
+        # further. Empty room sits at min_rate.
+        count = _clamp01(scene.count_norm)
+        activity = _clamp01(scene.activity)
+        movement = _clamp01(scene.movement)
+        # Hz: 0.04 (empty) .. 0.5 (full active). 25s..2s traversal.
+        rate_hz = 0.04 + 0.46 * _clamp01(0.55 * count + 0.30 * activity + 0.15 * movement)
+        self._browse_phase = (self._browse_phase + rate_hz * max(0.0, dt)) % 1.0
+        # Triangle wave: 0..1..0 over phase 0..1
+        if self._browse_phase < 0.5:
+            tri = self._browse_phase * 2.0
+        else:
+            tri = 2.0 - self._browse_phase * 2.0
+        # Map to CV band 0.025..0.21 (same as the pre-6/4 cv4 output range)
+        return 0.025 + 0.185 * tri
+
+    def _dispersion_target(self, scene: PersonScene) -> float:
+        """CV8 (DISPERSION) — driven by audience physical spread.
+
+        Operator 6/4 r5: CV4 is now the wavetable browser, CV8 patches
+        into SWN DISPERSION. Musically: dispersion = textural fragmentation
+        / grain spread, so it should respond to how PHYSICALLY DISPERSED
+        the audience is, not how close any single person is.
+
+        Inputs:
+          spread_x (primary, 0.65 weight) — bbox spread across the frame
+          count_norm (secondary, 0.25)     — more bodies = more spread material
+          activity  (tertiary, 0.10)       — moving crowd adds shimmer
+
+        Empty / single still person → CV8 ~ 0.025 (no dispersion, focused).
+        Multiple bodies edge-to-edge → CV8 ~ 0.21 (full dispersion grain).
+        """
+        spread = _clamp01(scene.spread_x)
+        count = _clamp01(scene.count_norm)
+        activity = _clamp01(scene.activity)
+        dispersion_signal = _clamp01(0.65 * spread + 0.25 * count + 0.10 * activity)
+        return 0.025 + 0.185 * dispersion_signal
+
     def step_movement_gate_only(self, scene: PersonScene, current_values: Sequence[float], *, dt: float) -> list[float]:
         """Update CV7 (glitch) AND CV6 (mix VCA) during still-frame holds.
 
@@ -940,6 +1001,12 @@ class HumanAwareSwnMapper:
             self._current = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene)
+        # CV4 BROWSE — keep walking through stillness. The whole point of
+        # the autonomous browse LFO is that it never stops; even a frozen
+        # camera scene should keep evolving the wavetable position. dt
+        # here is the actual elapsed time so the phase advances correctly
+        # whether we're on the live or stillness path.
+        targets[3] = self._browse_target(scene, dt)
         # CV6 main mix VCA — keep it responsive to presence during stillness,
         # same math as the live path in step_scene. Presence filtered through
         # the one-pole low-pass to absorb YOLO detection dropouts.
@@ -978,6 +1045,19 @@ class HumanAwareSwnMapper:
             root_semi = 0.0
             voice_offsets = (0.0, 7.0, 12.0)
             wander_scale = 1.0
+        # Pitch wander — applied uniformly to all three voices, NOT per-voice
+        # with different scales. The pre-6/4 design used per-voice scales
+        # (1.0, 0.65, 0.42) which pushed voices apart by fractions of a
+        # semitone, producing audible 1-2Hz beating between adjacent voices
+        # (a 0.24 semitone gap at root D2 = 1Hz beat). Operator 6/4 r5
+        # noted dissonance via mic check — beating between supposedly
+        # unison voices on the 'grounding' voicing.
+        #
+        # Fix: compute a single global wander value, applied to all three
+        # voices identically. The chord shape (voice_offsets from the
+        # palette) stays exactly as the palette intends. Wander now moves
+        # the WHOLE chord glacially around the root, not individual voices
+        # against each other.
         pitch_wander = ((x - 0.5) * 0.85 + movement * 0.35 + count * 0.20) * semitone * wander_scale
         if scene.tracks:
             id_signature = sum(((track.id % 7) - 3) for track in scene.tracks[:3]) / 18.0
@@ -1009,9 +1089,9 @@ class HumanAwareSwnMapper:
         mix_target = 0.00 + 1.00 * _clamp01(presence)
         targets = [
             (root_semi + voice_offsets[0]) * semitone + pitch_wander,
-            (root_semi + voice_offsets[1]) * semitone + pitch_wander * 0.65,
-            (root_semi + voice_offsets[2]) * semitone + pitch_wander * 0.42,
-            0.025 + 0.165 * (0.62 * x + 0.23 * spread + 0.15 * activity),
+            (root_semi + voice_offsets[1]) * semitone + pitch_wander,
+            (root_semi + voice_offsets[2]) * semitone + pitch_wander,
+            self._browse_target(scene, dt),
             # CV5 -> SWN TRANSPOSE (was dispersion). Operator patched 6/3:
             # this is no longer textural drift, it's bipolar V/oct shift of
             # the whole oscillator bank. We give it a center-biased value
@@ -1025,7 +1105,7 @@ class HumanAwareSwnMapper:
             self.max_cv * (0.50 + 0.35 * (0.5 - y)),  # cv5 transpose center+bipolar
             self.max_cv * mix_target,
             self._movement_gate_target(scene),
-            0.025 + 0.185 * (0.68 * nearest + 0.22 * activity + 0.10 * movement),
+            self._dispersion_target(scene),
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
 

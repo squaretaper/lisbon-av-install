@@ -61,21 +61,28 @@ VOICING_BANDS = [
     # (low, high, voicing) — list order = ascending density.
     # Bands overlap by HYST so a hovering density doesn't thrash.
     # Names must match audio/chord_palette.py VOICINGS keys.
-    (0.00, 0.18, "grounding"),       # empty/still: single low cluster
-    (0.18, 0.45, "open_fifth"),      # sparse: austere fifth, no third
-    (0.45, 0.72, "suspended_fourth"),# building: open, unresolved
-    (0.72, 1.00, "major_triad"),     # busy active: full bright triad
+    #
+    # Operator 6/4 r5: "more requiem style dirge minor key vibes."
+    # Home is minor_triad. Empty/floor uses deep_fifth (sub + fifth, no
+    # third, mournful and unresolved). Mid-density opens to minor_triad
+    # proper. High density layers in quartal (modal, hollow). Peak active
+    # room dips into cluster_tight for the dissonance Pablo said is OK.
+    # No major_triad anywhere — the room never resolves bright.
+    (0.00, 0.18, "deep_fifth"),       # empty: sub-anchored fifth, no third, dirge floor
+    (0.18, 0.45, "minor_triad"),      # sparse: true minor home
+    (0.45, 0.72, "quartal"),          # building: hollow fourths, modal tension
+    (0.72, 1.00, "cluster_tight"),    # peak: minor 2nd cluster, controlled dissonance
 ]
 VOICING_HYSTERESIS = 0.05  # density delta required to leave a band
 
-ROOT_SEMITONES_MIN = 36.0  # D2
-ROOT_SEMITONES_MAX = 48.0  # D3 (one octave of room-driven transpose)
+ROOT_SEMITONES_MIN = 34.0  # Bb1 — deep mourning register
+ROOT_SEMITONES_MAX = 46.0  # A#2 — never climbs out of the dirge band
 
-WANDER_MIN = 0.20
-WANDER_MAX = 1.00
+WANDER_MIN = 0.15  # near-static at floor (less wander = more dirge-like)
+WANDER_MAX = 0.70  # full active room still glacial; this isn't a melody
 
-SMOOTHING_MIN = 0.40
-SMOOTHING_MAX = 1.20
+SMOOTHING_MIN = 0.30  # slow chord transitions (~slow swell)
+SMOOTHING_MAX = 0.80  # even at peak the chord doesn't snap
 
 # Density input EMA — soaks YOLO bbox jitter so the chord doesn't flicker.
 DENSITY_EMA_HZ = 0.5  # ~320 ms tau
