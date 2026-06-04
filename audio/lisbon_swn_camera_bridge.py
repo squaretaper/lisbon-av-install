@@ -946,8 +946,13 @@ class HumanAwareSwnMapper:
         count = _clamp01(scene.count_norm)
         activity = _clamp01(scene.activity)
         movement = _clamp01(scene.movement)
-        # Hz: 0.04 (empty) .. 0.5 (full active). 25s..2s traversal.
-        rate_hz = 0.04 + 0.46 * _clamp01(0.55 * count + 0.30 * activity + 0.15 * movement)
+        # Hz: 0.018 (empty) .. 0.10 (full active). 55s..10s traversal.
+        # 6/4 r6: dropped max 0.5 → 0.10 Hz. At 0.5Hz the wavetable
+        # stepping was directly perceptible as rhythmic pulse (arpeggio
+        # feel). 0.10 Hz keeps motion present without crossing into
+        # rhythmic territory — at full density a triangle takes 10s
+        # to traverse, which reads as slow drift, not pulse.
+        rate_hz = 0.018 + 0.082 * _clamp01(0.55 * count + 0.30 * activity + 0.15 * movement)
         self._browse_phase = (self._browse_phase + rate_hz * max(0.0, dt)) % 1.0
         # Triangle wave: 0..1..0 over phase 0..1
         if self._browse_phase < 0.5:
