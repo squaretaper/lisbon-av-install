@@ -80,14 +80,14 @@ VOICING_BANDS = [
 ]
 VOICING_HYSTERESIS = 0.05  # density delta required to leave a band
 
-ROOT_SEMITONES_MIN = 34.0  # Bb1 — deep mourning register
-ROOT_SEMITONES_MAX = 46.0  # A#2 — never climbs out of the dirge band
+ROOT_SEMITONES_MIN = 36.0  # D2 — solid dirge floor
+ROOT_SEMITONES_MAX = 46.0  # A#2 — never climbs out of mourning band
 
-WANDER_MIN = 0.15  # near-static at floor (less wander = more dirge-like)
-WANDER_MAX = 0.70  # full active room still glacial; this isn't a melody
+WANDER_MIN = 0.05  # 6/4 r6: dropped 0.15 → 0.05 — calm room is near-static drone
+WANDER_MAX = 0.55  # was 0.70 — even peak stays slow
 
-SMOOTHING_MIN = 0.30  # slow chord transitions (~slow swell)
-SMOOTHING_MAX = 0.80  # even at peak the chord doesn't snap
+SMOOTHING_MIN = 0.20  # 6/4 r6: slower chord crossfades at low density (more drone)
+SMOOTHING_MAX = 0.65  # was 0.80 — peak still doesn't snap
 
 # Density input EMA — soaks YOLO bbox jitter so the chord doesn't flicker.
 DENSITY_EMA_HZ = 0.5  # ~320 ms tau
