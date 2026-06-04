@@ -154,6 +154,28 @@ class PersonSceneTracker:
         self._tracks: dict[int, _TrackMemory] = {}
         self._next_id = 1
 
+    def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None) -> None:
+        """Hot-update detector thresholds from the profile poller.
+
+        Operator 6/4 r13: source-PR-per-knob was costing ~10s of CV freeze
+        per tweak. The bridge already polls heuristic_profile.json every
+        second; expose the most-tweaked knobs through that path so
+        threshold tuning is zero-restart.
+
+        Only updates fields whose new value differs meaningfully from the
+        current value (>1e-6) so a no-op poll doesn't log noise.
+        """
+        if stillness_deadband is not None:
+            new_val = max(0.0, float(stillness_deadband))
+            if abs(new_val - self.stillness_deadband) > 1e-6:
+                print(f"[poll-tune] stillness_deadband {self.stillness_deadband:.4f} -> {new_val:.4f}", flush=True)
+                self.stillness_deadband = new_val
+        if match_threshold is not None:
+            new_val = float(match_threshold)
+            if abs(new_val - self.match_threshold) > 1e-6:
+                print(f"[poll-tune] match_threshold {self.match_threshold:.4f} -> {new_val:.4f}", flush=True)
+                self.match_threshold = new_val
+
     def update(
         self,
         observations: Sequence[PersonObservation],
@@ -885,6 +907,13 @@ class HumanAwareSwnMapper:
         # has no abrupt jumps; combined with the scene-driven rate this
         # gives a wavetable position that never settles.
         self._browse_phase: float = 0.0  # 0..1, accumulates with time*rate
+        # 6/4 r13: hot-tunable knobs read from heuristic_profile.json's
+        # `tune` block. Default values match the previous source-hardcoded
+        # versions so behavior is unchanged until the profile writes new
+        # values. The set_tuning() method updates them atomically.
+        self.glitch_fire_threshold: float = 0.03
+        self.browse_rate_min_hz: float = 0.018
+        self.browse_rate_max_hz: float = 0.100
         # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
         # root. None = use the historical hardcoded open-fifth.
         self._chord: dict | None = None
@@ -896,6 +925,24 @@ class HumanAwareSwnMapper:
         # Restarting the bridge re-seeds the drift, which is desired (each
         # show starts at zero drift, gathers over the session).
         self._drift_start: float = self._chord_now()
+
+    def set_tuning(self, *, glitch_fire_threshold: float | None = None, browse_rate_min_hz: float | None = None, browse_rate_max_hz: float | None = None) -> None:
+        """Hot-update HumanAwareSwnMapper tuning knobs from the profile poller."""
+        if glitch_fire_threshold is not None:
+            new_val = max(0.0, float(glitch_fire_threshold))
+            if abs(new_val - self.glitch_fire_threshold) > 1e-6:
+                print(f"[poll-tune] glitch_fire_threshold {self.glitch_fire_threshold:.4f} -> {new_val:.4f}", flush=True)
+                self.glitch_fire_threshold = new_val
+        if browse_rate_min_hz is not None:
+            new_val = max(0.0, float(browse_rate_min_hz))
+            if abs(new_val - self.browse_rate_min_hz) > 1e-6:
+                print(f"[poll-tune] browse_rate_min_hz {self.browse_rate_min_hz:.4f} -> {new_val:.4f}", flush=True)
+                self.browse_rate_min_hz = new_val
+        if browse_rate_max_hz is not None:
+            new_val = max(0.0, float(browse_rate_max_hz))
+            if abs(new_val - self.browse_rate_max_hz) > 1e-6:
+                print(f"[poll-tune] browse_rate_max_hz {self.browse_rate_max_hz:.4f} -> {new_val:.4f}", flush=True)
+                self.browse_rate_max_hz = new_val
 
     def set_chord(self, chord: dict | None) -> None:
         """Receive a chord block resolved by audio.chord_palette.resolve_chord.
@@ -960,7 +1007,7 @@ class HumanAwareSwnMapper:
         motion sends a full-strength trigger.
         """
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
-        fire_threshold = 0.03   # 6/4 r8: bumped sensitivity 0.06 → 0.04. Catches gentler movement; still above YOLO bbox jitter noise floor (~0.01-0.02)
+        fire_threshold = self.glitch_fire_threshold
         if movement < fire_threshold:
             return 0.0
         return float(self.max_cv)
@@ -984,13 +1031,9 @@ class HumanAwareSwnMapper:
         count = _clamp01(scene.count_norm)
         activity = _clamp01(scene.activity)
         movement = _clamp01(scene.movement)
-        # Hz: 0.018 (empty) .. 0.10 (full active). 55s..10s traversal.
-        # 6/4 r6: dropped max 0.5 → 0.10 Hz. At 0.5Hz the wavetable
-        # stepping was directly perceptible as rhythmic pulse (arpeggio
-        # feel). 0.10 Hz keeps motion present without crossing into
-        # rhythmic territory — at full density a triangle takes 10s
-        # to traverse, which reads as slow drift, not pulse.
-        rate_hz = 0.018 + 0.082 * _clamp01(0.55 * count + 0.30 * activity + 0.15 * movement)
+        # Hz range hot-tunable via profile `tune` block. Default ~0.018..0.10
+        # (55s..10s traversal); rate scales with presence within the band.
+        rate_hz = self.browse_rate_min_hz + (self.browse_rate_max_hz - self.browse_rate_min_hz) * _clamp01(0.55 * count + 0.30 * activity + 0.15 * movement)
         self._browse_phase = (self._browse_phase + rate_hz * max(0.0, dt)) % 1.0
         # Triangle wave: 0..1..0 over phase 0..1
         if self._browse_phase < 0.5:
@@ -1552,6 +1595,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                             expired = datetime.now(tz=timezone.utc) > expiry
                         except Exception:
                             expired = False
+                    # 6/4 r13: apply `tune` block from the profile to live
+                    # detector + mapper knobs. Independent of chord layer
+                    # and chord expiry — tuning persists across expired
+                    # profiles. This is the hot path that replaces source
+                    # PRs for threshold / rate adjustments.
+                    tune = data.get("tune") if isinstance(data.get("tune"), dict) else {}
+                    if tune:
+                        try:
+                            person_tracker.set_tuning(
+                                stillness_deadband=tune.get("stillness_deadband"),
+                                match_threshold=tune.get("tracker_match_threshold"),
+                            )
+                        except Exception as exc:
+                            print(f"[poll] tune tracker error: {exc!r}", flush=True)
+                        try:
+                            human_mapper.set_tuning(
+                                glitch_fire_threshold=tune.get("glitch_fire_threshold"),
+                                browse_rate_min_hz=tune.get("browse_rate_min_hz"),
+                                browse_rate_max_hz=tune.get("browse_rate_max_hz"),
+                            )
+                        except Exception as exc:
+                            print(f"[poll] tune mapper error: {exc!r}", flush=True)
                     if not expired and resolve_chord is not None:
                         chord = resolve_chord(data.get("chord"))
                         profile_state["chord"] = chord
