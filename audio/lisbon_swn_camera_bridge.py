@@ -265,11 +265,6 @@ def _raise_magnitude(
         ex, ey, ec = keypoints[elbow_idx]
         if wc < _KEYPOINT_MIN_CONFIDENCE or ec < _KEYPOINT_MIN_CONFIDENCE:
             continue
-        # 6/4 r21: skip head-only detections. If both elbow and wrist
-        # are in the top 10% of frame, the pose model is almost
-        # certainly hallucinating limb positions around a head crop.
-        if ey < 0.10 and wy < 0.10:
-            continue
         # Elevation: how far the wrist sits above the elbow in image
         # coords. Positive when raised, negative or zero when arm hangs.
         elevation = ey - wy
