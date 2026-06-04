@@ -68,8 +68,13 @@ VOICING_BANDS = [
     # proper. High density layers in quartal (modal, hollow). Peak active
     # room dips into cluster_tight for the dissonance Pablo said is OK.
     # No major_triad anywhere — the room never resolves bright.
-    (0.00, 0.18, "deep_fifth"),       # empty: sub-anchored fifth, no third, dirge floor
-    (0.18, 0.45, "minor_triad"),      # sparse: true minor home
+    # 6/4 r5b: floor band uses minor_triad (was deep_fifth). deep_fifth's
+    # sub-octave voice (-12 st offset) at root 34 (Bb1) pushed voice 1 to
+    # CV ~= -0.10V which the bridge clamps to 0 — making voice 1 silent.
+    # minor_triad keeps the dirge minor home but lands voice 1 ON the
+    # root so all three voices are audible at the floor.
+    (0.00, 0.18, "minor_triad"),      # empty: minor home, all voices audible
+    (0.18, 0.45, "minor_triad"),      # sparse: same voicing, root climbs
     (0.45, 0.72, "quartal"),          # building: hollow fourths, modal tension
     (0.72, 1.00, "cluster_tight"),    # peak: minor 2nd cluster, controlled dissonance
 ]
