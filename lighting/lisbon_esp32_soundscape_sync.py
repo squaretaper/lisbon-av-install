@@ -150,6 +150,33 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     movement_gate = glitch_trigger
     pattern = main_mix_vca  # slow energy envelope, was the old "pattern" role
     depth = _clamp(_num(cv, "cv8_depth") / max_cv, 0.0, 1.0)
+
+    # --- C200 mic integration (operator request 6/4) ---
+    # The room-audio probe runs on :8767 and writes its own status JSON next to
+    # the bridge's. It carries the C200 microphone's live RMS, peak, dom freq,
+    # and band ratios — independent of the ES-9 return path (which we don't
+    # use at this install; ES-9 outs go DIRECT to monitors). Feeding the mic
+    # into the lights gives us a real acoustic envelope for brightness and an
+    # independent strobe path that fires on actual room-sound transients
+    # (claps, sharp gestures, anyone making noise), separate from the CV7
+    # glitch trigger. Both are OR'd into the strobe decision below so either
+    # signal can fire mode 2.
+    mic = status.get("room_audio") or {}
+    mic_rms = _num(mic, "rms")
+    mic_peak = _num(mic, "peak")
+    mic_dom_hz = _num(mic, "dom_freq_hz")
+    mic_high_band = _clamp(_num(mic, "band_high"), 0.0, 1.0)
+    mic_mid_band = _clamp(_num(mic, "band_mid"), 0.0, 1.0)
+    mic_low_band = _clamp(_num(mic, "band_low"), 0.0, 1.0)
+    mic_active = mic_rms > 1e-3 or mic_peak > 5e-3
+    # Mic transient: a peak well above the RMS floor is a sharp event (clap,
+    # voice burst). Normalize to 0..1 so the strobe path can use it.
+    mic_transient = _clamp((mic_peak - mic_rms * 3.0) / 0.25, 0.0, 1.0) if mic_active else 0.0
+    # Mic energy: brings room sound into the brightness envelope so anyone
+    # talking/clapping audibly brightens the strip. 0.10 RMS = strong.
+    mic_energy = _clamp((mic_rms / 0.10) * 0.7 + (mic_peak / 0.40) * 0.3, 0.0, 1.0) if mic_active else 0.0
+    # --- end mic integration ---
+
     soundscape_freq_hz = 120.0 + 3880.0 * _clamp(0.78 * browse + 0.22 * glitch_trigger, 0.0, 1.0)
     soundscape_high = _clamp(0.35 * glitch_trigger + 0.65 * browse, 0.0, 1.0)
     # Glitch score: weighted toward the explicit glitch_trigger CV plus
@@ -166,13 +193,21 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
 
     # Modular/rack levels are interface-normalized. Treat ~0.18 RMS as strong.
     # When the ES-9 return is silent, keep the LEDs tied to the SWN sound-control
-    # vector rather than the camera/person count.
+    # vector rather than the camera/person count. C200 mic energy (operator
+    # request 6/4) folds in as a third path so the room's actual acoustic
+    # volume drives the strip when neither ES-9 return nor soundscape moves.
     audio_energy = _clamp((rms / 0.18) * 0.75 + (peak / 0.55) * 0.25, 0.0, 1.0)
     fallback_energy = _clamp(0.55 * activity + 0.25 * near + 0.20 * visual_motion, 0.0, 1.0)
     if audio_present:
-        energy = audio_energy
-        brightness_glitch = glitch
-        brightness_high = high_freq
+        energy = max(audio_energy, mic_energy * 0.85)
+        brightness_glitch = max(glitch, mic_transient)
+        brightness_high = max(high_freq, mic_high_band)
+    elif mic_active:
+        # Mic-only path: room is loud, ES-9 return is quiet (typical for our
+        # direct-out install). Drive the strip from the mic + soundscape.
+        energy = max(mic_energy, soundscape_energy * 0.6)
+        brightness_glitch = max(mic_transient, soundscape_glitch * 0.7)
+        brightness_high = max(mic_high_band, soundscape_high * 0.5)
     else:
         energy = max(soundscape_energy, fallback_energy * 0.35)
         brightness_glitch = soundscape_glitch
@@ -180,10 +215,27 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
 
     brightness = int(round(_clamp(16 + 112 * energy + 58 * brightness_glitch + 26 * brightness_high, 0, 192) / 16.0) * 16)
     brightness = int(_clamp(brightness, 0, 176))
-    # Do not let the cheap derivative-based glitch score strobe by itself: steady
-    # low drones can have sharp edges while still sounding like drone. Mode 2 is
-    # reserved for audibly brighter material: high-band energy, a raised spectral
-    # centroid, or a transient paired with mid/high content.
+    # Strobe decision tree (rebuilt 6/4 for operator request):
+    #
+    #   PRIORITY 1: CV7 glitch trigger direct fire. The whole point of CV7
+    #     is "the audio just glitched out, slam the lights". Below 6/4 we
+    #     had a softer threshold (cv7 >= 0.52 gated by audio_present==False)
+    #     which never fired during normal performance because the audio
+    #     return was always non-zero. Now: ANY cv7 >= 0.40 of max_cv fires
+    #     mode 2 with brightness scaled by the trigger magnitude. No other
+    #     conditions. The CV is the contract.
+    #
+    #   PRIORITY 2: Mic transient direct fire. A loud clap, voice burst, or
+    #     sharp acoustic event in the room (the C200 mic catches it) fires
+    #     strobe even when CV7 is quiet. This couples lights to room sound
+    #     independent of the modular patch.
+    #
+    #   PRIORITY 3 (legacy): the audio-spectrum strobe path. Kept because
+    #     it still catches ES-9 return content if/when we ever route it.
+    #
+    # Strobes always pull at least 192 brightness (was 208) and scale up
+    # from there. Operator wants "intense strobing" — brightness ceiling
+    # raised to 248 (was 240).
     spectral_brightness = _clamp((spectral_centroid - 550.0) / 1800.0, 0.0, 1.0)
     high_band_burst = high_band >= 0.16 and spectral_centroid >= 900 and low_band <= 0.78
     bright_transient = transient >= 0.32 and low_band <= 0.78 and (
@@ -205,8 +257,17 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     ), 0.0, 1.0)
     strobe_active = high_band_burst or bright_transient or mid_high_glitch or hard_high_frequency
 
+    # PRIORITY 1: CV7 glitch direct strobe
+    if glitch_trigger >= 0.40:
+        strobe_brightness = int(round(_clamp(208 + 40 * glitch_trigger, 208, 248) / 16.0) * 16)
+        return LightState(mode="2", brightness=strobe_brightness, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f}")
+    # PRIORITY 2: Mic transient direct strobe
+    if mic_active and mic_transient >= 0.45:
+        strobe_brightness = int(round(_clamp(208 + 40 * mic_transient + 16 * mic_high_band, 208, 248) / 16.0) * 16)
+        return LightState(mode="2", brightness=strobe_brightness, reason=f"mic transient strobe {mic_transient:.2f} peak={mic_peak:.3f}")
+    # PRIORITY 3: legacy audio-spectrum strobe (ES-9 return content)
     if audio_present and strobe_active and strobe_score >= 0.16:
-        strobe_brightness = int(round(_clamp(192 + 56 * strobe_score + 26 * high_band + 18 * transient, 208, 240) / 16.0) * 16)
+        strobe_brightness = int(round(_clamp(192 + 56 * strobe_score + 26 * high_band + 18 * transient, 208, 248) / 16.0) * 16)
         return LightState(mode="2", brightness=strobe_brightness, reason=f"audio glitch strobe {strobe_score:.2f} band={high_band:.2f} centroid={spectral_centroid:.0f}Hz trans={transient:.2f}")
     if (not audio_present) and soundscape_glitch >= 0.52:
         return LightState(mode="2", brightness=max(112, brightness), reason=f"soundscape glitch {soundscape_glitch:.2f}")
@@ -390,6 +451,27 @@ def read_status(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text())
 
 
+def merge_mic_into_status(status: dict[str, Any], mic_path: Path | None) -> dict[str, Any]:
+    """Optionally fold the C200 mic probe status into the soundscape status dict.
+
+    The bridge writes swn_camera_soundscape_status.json. The room-audio probe
+    writes room_audio_probe_status.json. We don't change either producer; we
+    just merge the mic snapshot under the 'room_audio' key when both exist so
+    state_from_soundscape_status() can read it through the same status dict.
+    Silently no-op when the mic file is missing or unreadable so the sync
+    keeps working if the audio probe is restarting.
+    """
+    if mic_path is None:
+        return status
+    try:
+        mic = json.loads(mic_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return status
+    if isinstance(mic, dict) and mic.get("ok"):
+        status["room_audio"] = mic
+    return status
+
+
 def status_age_ms(status: dict[str, Any], *, observed_at: float | None = None) -> int | None:
     timestamp = status.get("timestamp")
     if not isinstance(timestamp, (int, float)):
@@ -400,6 +482,7 @@ def status_age_ms(status: dict[str, Any], *, observed_at: float | None = None) -
 
 def run_sync(args: argparse.Namespace) -> int:
     status_path = Path(args.status_path)
+    mic_path = Path(args.mic_status_path) if args.mic_status_path else None
     current = LightState(
         mode=args.initial_mode,
         brightness=args.initial_brightness,
@@ -420,6 +503,7 @@ def run_sync(args: argparse.Namespace) -> int:
                 if stat.st_mtime != last_mtime:
                     last_mtime = stat.st_mtime
                     status = read_status(status_path)
+                    status = merge_mic_into_status(status, mic_path)
                     observed_at = time.time()
                     age = status_age_ms(status, observed_at=observed_at)
                     age_suffix = f" age={age}ms" if age is not None else ""
@@ -451,6 +535,11 @@ def run_sync(args: argparse.Namespace) -> int:
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Sync ESP32 pure-red lights to Lisbon soundscape audio frequency/glitches.")
     p.add_argument("--status-path", default="audio/runtime/swn_camera_soundscape_status.json")
+    p.add_argument(
+        "--mic-status-path",
+        default="audio/runtime/room_audio_probe_status.json",
+        help="path to the C200 mic probe status JSON; pass empty string to disable mic integration",
+    )
     p.add_argument("--serial", default="/dev/cu.usbserial-0001")
     p.add_argument("--baud", type=int, default=115200)
     p.add_argument("--interval", type=float, default=0.02)

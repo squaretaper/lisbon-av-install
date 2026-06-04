@@ -31,13 +31,13 @@
   },
   "mode_bias": "sparse_drone",
   "profile_id": "yesterday-distilled-sparse",
-  "reason": "median chord block from 6 samples in family=sparse on 2026-06-03",
+  "reason": "distilled from profile_history.jsonl 2026-06-03 \u2014 median chord block from 6 samples in family=sparse on 2026-06-03",
   "scene": {
     "avoid_repetition_seconds": 110.7141,
     "density_target": 0.1031,
     "silence_hold_seconds": 17.795
   },
   "schema": "lisbon.heuristic_profile.v1",
-  "source": "distilled_from_profile_history_2026-06-03",
+  "source": "manual",
   "updated_at": "2026-06-04T08:38:57Z"
 }
