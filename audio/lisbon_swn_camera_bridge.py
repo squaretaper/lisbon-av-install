@@ -914,6 +914,16 @@ class HumanAwareSwnMapper:
         self.glitch_fire_threshold: float = 0.03
         self.browse_rate_min_hz: float = 0.018
         self.browse_rate_max_hz: float = 0.100
+        # 6/4 r14: CV7 latch with decay. Pure binary fire was technically
+        # correct but read as "unreliable" because YOLO emits movement
+        # signals on isolated frames (5Hz camera, movement computed only
+        # on the frame where bbox center jumps). Latching holds CV7 at
+        # max_cv for hold_ms after a trigger, then exp-decays over
+        # release_ms so subsequent gaps between detection frames don't
+        # collapse the strobe. Hot-tunable via cv7_hold_ms / cv7_release_ms.
+        self.cv7_hold_ms: float = 250.0     # full max_cv for this long after trigger
+        self.cv7_release_ms: float = 350.0  # then exp-decay to 0 with this tau
+        self._cv7_latch_elapsed_ms: float | None = None  # None = idle, else ms since trigger
         # Chord layer — voices 1/2/3 V/oct positions, semitone offsets from
         # root. None = use the historical hardcoded open-fifth.
         self._chord: dict | None = None
@@ -926,7 +936,7 @@ class HumanAwareSwnMapper:
         # show starts at zero drift, gathers over the session).
         self._drift_start: float = self._chord_now()
 
-    def set_tuning(self, *, glitch_fire_threshold: float | None = None, browse_rate_min_hz: float | None = None, browse_rate_max_hz: float | None = None) -> None:
+    def set_tuning(self, *, glitch_fire_threshold: float | None = None, browse_rate_min_hz: float | None = None, browse_rate_max_hz: float | None = None, cv7_hold_ms: float | None = None, cv7_release_ms: float | None = None) -> None:
         """Hot-update HumanAwareSwnMapper tuning knobs from the profile poller."""
         if glitch_fire_threshold is not None:
             new_val = max(0.0, float(glitch_fire_threshold))
@@ -943,6 +953,16 @@ class HumanAwareSwnMapper:
             if abs(new_val - self.browse_rate_max_hz) > 1e-6:
                 print(f"[poll-tune] browse_rate_max_hz {self.browse_rate_max_hz:.4f} -> {new_val:.4f}", flush=True)
                 self.browse_rate_max_hz = new_val
+        if cv7_hold_ms is not None:
+            new_val = max(0.0, float(cv7_hold_ms))
+            if abs(new_val - self.cv7_hold_ms) > 1e-3:
+                print(f"[poll-tune] cv7_hold_ms {self.cv7_hold_ms:.1f} -> {new_val:.1f}", flush=True)
+                self.cv7_hold_ms = new_val
+        if cv7_release_ms is not None:
+            new_val = max(1.0, float(cv7_release_ms))
+            if abs(new_val - self.cv7_release_ms) > 1e-3:
+                print(f"[poll-tune] cv7_release_ms {self.cv7_release_ms:.1f} -> {new_val:.1f}", flush=True)
+                self.cv7_release_ms = new_val
 
     def set_chord(self, chord: dict | None) -> None:
         """Receive a chord block resolved by audio.chord_palette.resolve_chord.
@@ -989,28 +1009,47 @@ class HumanAwareSwnMapper:
         self._presence_state = self._presence_state + (raw - self._presence_state) * alpha
         return float(np.clip(self._presence_state, 0.0, 1.0))
 
-    def _movement_gate_target(self, scene: PersonScene) -> float:
-        """CV7 glitch trigger — binary fire to max_cv on real movement, else 0.
+    def _movement_gate_target(self, scene: PersonScene, dt: float = 0.0) -> float:
+        """CV7 glitch trigger — latching binary fire with exp decay.
 
-        Operator 6/4 r7: 'glitch on cv7 should go to 1 when activated, we're
-        not getting strong audio glitch.' The scaled-magnitude design
-        (gate = (movement*2.6)^0.55 * max_cv) meant subtle movement values
-        produced 30-50% CV — never strong enough to slam the O&C gate
-        and never crossing the 0.40 threshold the lighting sync requires
-        for the direct strobe path.
+        Pre-r14 was pure binary fire (snap to max_cv if movement crossed
+        threshold, else 0). Technically correct but read as unreliable
+        because YOLO's per-frame movement signal is sparse: at 5Hz camera
+        with movement computed only on the frame where bbox center jumps,
+        most frames show movement=0 even while the person is actually
+        moving. CV7 then snapped 0 → max → 0 between detection frames =
+        sub-frame strobe ticks that the downstream consumers (O&C gate,
+        ESP32 strobe sync) couldn't reliably catch.
 
-        New design: threshold + hold. If movement crosses fire_threshold,
-        CV7 = max_cv (full open). Otherwise CV7 = 0. The fast 24 Hz slew
-        on PER_CV_SMOOTHING_HZ[6] handles the ms-scale envelope at the
-        output stage so the gate still rises/falls smoothly enough for
-        the dispersion gate, but the *target* is binary so any qualifying
-        motion sends a full-strength trigger.
+        Now: when movement crosses threshold, latch CV7 at max_cv and
+        track elapsed time via accumulated dt (same clock source as the
+        rest of the mapper, deterministic in tests). Inside the hold
+        window output stays at max_cv. After hold, exp-decays to 0 over
+        release_ms. Any new trigger inside either window re-arms (full
+        max_cv, hold timer reset). Once decayed output drops below 5%
+        of max_cv, latch clears.
         """
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
-        fire_threshold = self.glitch_fire_threshold
-        if movement < fire_threshold:
+        # Re-arm on any qualifying motion (reset elapsed to 0).
+        if movement >= self.glitch_fire_threshold:
+            self._cv7_latch_elapsed_ms = 0.0
+            return float(self.max_cv)
+        # Idle when no latch active.
+        if self._cv7_latch_elapsed_ms is None:
             return 0.0
-        return float(self.max_cv)
+        # Accumulate elapsed time using the mapper's own dt clock.
+        self._cv7_latch_elapsed_ms += max(0.0, dt) * 1000.0
+        elapsed_ms = self._cv7_latch_elapsed_ms
+        hold_ms = self.cv7_hold_ms
+        release_ms = max(1.0, self.cv7_release_ms)
+        if elapsed_ms < hold_ms:
+            return float(self.max_cv)
+        release_elapsed = elapsed_ms - hold_ms
+        envelope = math.exp(-release_elapsed / release_ms)
+        if envelope < 0.05:
+            self._cv7_latch_elapsed_ms = None
+            return 0.0
+        return float(self.max_cv * envelope)
 
     def _browse_target(self, scene: PersonScene, dt: float) -> float:
         """CV4 (BROWSE) — always-on evolving wavetable position.
@@ -1086,7 +1125,7 @@ class HumanAwareSwnMapper:
         if self._current is None or len(self._current) != len(CV_LABELS):
             self._current = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
         targets = [float(np.clip(v, 0.0, self.max_cv)) for v in current_values]
-        targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene)
+        targets[MOVEMENT_GATE_CV_INDEX] = self._movement_gate_target(scene, dt=dt)
         # CV4 BROWSE — keep walking through stillness. The whole point of
         # the autonomous browse LFO is that it never stops; even a frozen
         # camera scene should keep evolving the wavetable position. dt
@@ -1190,7 +1229,7 @@ class HumanAwareSwnMapper:
             # not gesture.
             self.max_cv * (0.50 + 0.35 * (0.5 - y)),  # cv5 transpose center+bipolar
             self.max_cv * mix_target,
-            self._movement_gate_target(scene),
+            self._movement_gate_target(scene, dt=dt),
             self._dispersion_target(scene),
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
@@ -1614,6 +1653,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                                 glitch_fire_threshold=tune.get("glitch_fire_threshold"),
                                 browse_rate_min_hz=tune.get("browse_rate_min_hz"),
                                 browse_rate_max_hz=tune.get("browse_rate_max_hz"),
+                                cv7_hold_ms=tune.get("cv7_hold_ms"),
+                                cv7_release_ms=tune.get("cv7_release_ms"),
                             )
                         except Exception as exc:
                             print(f"[poll] tune mapper error: {exc!r}", flush=True)

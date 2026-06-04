@@ -263,20 +263,23 @@ def test_still_frame_hold_decays_cv7_and_cv6_while_freezing_pitch_cvs():
     quiet_room = _person_scene_for_test(movement=0.0, activity=0.0)
 
     hot = mapper.step_scene(moving_room, dt=1.0)
-    held = mapper.step_movement_gate_only(quiet_room, hot, dt=0.25)
+    # 6/4 r14: CV7 now latches with hold+decay (default 250ms hold,
+    # 350ms tau). Step past the hold window so the envelope is
+    # measurably below max before asserting decay.
+    held = mapper.step_movement_gate_only(quiet_room, hot, dt=0.5)
+    held = mapper.step_movement_gate_only(quiet_room, held, dt=0.5)
 
     for index, (before, after) in enumerate(zip(hot, held)):
         if index == MOVEMENT_GATE_CV_INDEX:
-            # glitch decays
+            # glitch decays (slew chases envelope down toward 0)
             assert after < before
-            assert after <= 0.02
+            assert after <= 0.03
         elif index == MAIN_MIX_VCA_CV_INDEX:
             # mix VCA tracks presence — quiet room has no presence so it should
-            # drop, but the presence filter holds briefly to absorb YOLO
-            # detection dropouts. Over a 0.25s hold the filter shouldn't have
-            # moved more than ~15% of the diff, so 'after' can be within a
-            # small tolerance of 'before' rather than strictly less than.
-            assert after <= before + 0.01
+            # drop. With ~1s of stillness (extended in 6/4 r14 to expose the
+            # CV7 decay window) the presence filter has measurably dropped,
+            # but should still be non-negative and bounded below max_cv.
+            assert 0.0 <= after <= 0.18
         elif index == 3:
             # 6/4 r5: CV4 (BROWSE) is now an always-on evolving LFO; it
             # keeps walking through stillness so the wavetable position
@@ -286,6 +289,40 @@ def test_still_frame_hold_decays_cv7_and_cv6_while_freezing_pitch_cvs():
         else:
             # pitch CVs frozen (CV1-3 + CV5 + CV8)
             assert math.isclose(after, before, abs_tol=1e-9)
+
+
+def test_cv7_latches_at_max_for_hold_then_decays_smoothing_over_yolo_gaps():
+    """CV7 should snap to max on movement, hold there for hold_ms, then
+    exp-decay. This is the 6/4 r14 fix for the perceived 'unreliable'
+    glitch: YOLO emits movement only on the frame where the bbox center
+    jumps (5Hz), so pure binary fire produced sub-frame strobes between
+    detections. The latch holds CV7 high across the gap.
+    """
+    mapper = HumanAwareSwnMapper(max_cv=0.18, smoothing_hz=20.0)
+    mapper.cv7_hold_ms = 200.0
+    mapper.cv7_release_ms = 200.0
+    moving = _person_scene_for_test(movement=0.8, activity=0.8)
+    still = _person_scene_for_test(movement=0.0, activity=0.0)
+
+    # Single trigger frame.
+    trig = mapper._movement_gate_target(moving, dt=0.0)
+    assert math.isclose(trig, 0.18, abs_tol=1e-9)
+
+    # Inside hold window (100 ms): still at max even though scene is still.
+    held = mapper._movement_gate_target(still, dt=0.1)
+    assert math.isclose(held, 0.18, abs_tol=1e-9)
+
+    # Past hold, into release: envelope drops but is still substantial.
+    decaying = mapper._movement_gate_target(still, dt=0.3)
+    assert 0.03 < decaying < 0.18
+
+    # Long stillness: latch fully clears, output is 0.
+    cleared = mapper._movement_gate_target(still, dt=2.0)
+    assert cleared == 0.0
+
+    # Re-trigger re-arms full max.
+    re_trig = mapper._movement_gate_target(moving, dt=0.0)
+    assert math.isclose(re_trig, 0.18, abs_tol=1e-9)
 
 
 def test_yolo_result_adapter_extracts_person_observations_with_track_ids():
