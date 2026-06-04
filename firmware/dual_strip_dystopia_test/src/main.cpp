@@ -34,6 +34,12 @@ static uint8_t gBrightness = 64;  // 25% of FastLED max; not full-bright.
 static uint8_t gChaseStepMs = 96;  // Lower = faster drone chase, adjusted live over serial.
 static uint8_t gPulseDepth = 42;   // Background red pulse depth for drone chase.
 static uint8_t gPacketSpan = 20;   // Frequency-linked phase offset between crossing packets.
+// 6/4 r25: pure-white bloom layered on top of red patterns. Sync driver
+// sends a value 0-127 via `w<n>;` serial command (gated by 127 = ~50%
+// cap). Applied as a final-pass additive blend in render() so chase and
+// glitch get the same treatment without per-pattern edits. 0 = no
+// change (red pure), 127 = strong white bleed.
+static uint8_t gWhiteAmount = 0;
 static constexpr uint8_t FRAME_MS = 28;
 static constexpr uint32_t AUTO_MODE_MS = 9000;
 
@@ -404,6 +410,27 @@ void renderFrame() {
 
   renderLightPipes(t);
 
+  // 6/4 r25: pure-white bloom overlay. Add gWhiteAmount equally to G
+  // and B of every LED — R is already maxed by the patterns, so adding
+  // green+blue lifts the red toward warm white. qadd8 saturates so we
+  // never wrap. Only chase and glitch participate (modes 1 and 2) so
+  // blackout / all-red / dystopian stay pure red.
+  if (gWhiteAmount > 0 && (mode == MODE_CHASE || mode == MODE_GLITCH)) {
+    for (uint16_t i = 0; i < NUM_LEDS; ++i) {
+      // Scale white by the existing red level so dim LEDs don't suddenly
+      // bloom white — the bloom rides the red envelope. red=0 LEDs stay
+      // dark, red=255 LEDs lift toward white at the requested amount.
+      uint8_t r1 = stripJ1[i].r;
+      uint8_t r2 = stripJ2[i].r;
+      uint8_t add1 = (uint16_t)gWhiteAmount * r1 / 255;
+      uint8_t add2 = (uint16_t)gWhiteAmount * r2 / 255;
+      stripJ1[i].g = qadd8(stripJ1[i].g, add1);
+      stripJ1[i].b = qadd8(stripJ1[i].b, add1);
+      stripJ2[i].g = qadd8(stripJ2[i].g, add2);
+      stripJ2[i].b = qadd8(stripJ2[i].b, add2);
+    }
+  }
+
   FastLED.setBrightness(gBrightness);
   FastLED.show();
   frameNo++;
@@ -414,9 +441,51 @@ void printHelp() {
 }
 
 void handleSerial() {
+  // 6/4 r25: extended-command buffer for multi-char values like 'w42;'
+  // ('w' followed by a 1-3 digit value 0-127, terminated by ';'). The
+  // single-char protocol stays intact; ext mode kicks in only after 'w'.
+  static bool inExtCmd = false;
+  static char extCh = '\0';
+  static uint8_t extBuf[4] = {0};
+  static uint8_t extLen = 0;
   while (Serial.available() > 0) {
     char c = Serial.read();
+    if (inExtCmd) {
+      if (c == ';' || c == '\n' || c == '\r') {
+        // Parse extBuf as decimal integer.
+        uint16_t val = 0;
+        for (uint8_t k = 0; k < extLen; ++k) {
+          if (extBuf[k] < '0' || extBuf[k] > '9') { val = 0xFFFF; break; }
+          val = val * 10 + (extBuf[k] - '0');
+        }
+        if (val != 0xFFFF) {
+          if (extCh == 'w') {
+            gWhiteAmount = (val > 127) ? 127 : (uint8_t)val;
+            Serial.print("WHITE: ");
+            Serial.println(gWhiteAmount);
+          }
+        }
+        inExtCmd = false;
+        extLen = 0;
+        extCh = '\0';
+        continue;
+      }
+      if (c >= '0' && c <= '9' && extLen < 3) {
+        extBuf[extLen++] = c;
+        continue;
+      }
+      // Garbage in ext mode — bail.
+      inExtCmd = false;
+      extLen = 0;
+      extCh = '\0';
+      continue;
+    }
     switch (c) {
+      case 'w': case 'W':
+        inExtCmd = true;
+        extCh = 'w';
+        extLen = 0;
+        break;
       case 'a': case 'A':
         autoMode = true;
         mode = MODE_ALL_RED;
