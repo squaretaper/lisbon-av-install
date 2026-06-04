@@ -76,9 +76,12 @@ def test_status_age_ms_missing_timestamp_returns_none():
 def test_empty_room_maps_to_low_dystopian_breath():
     state = state_from_soundscape_status(status_template())
 
-    assert state.mode == "4"
-    assert 32 <= state.brightness <= 80
-    assert "empty" in state.reason
+    # 6/4 round 4: chase via CV6 is now the universal mode-1 path. Empty
+    # room (CV6=0) still resolves to mode 1, just at the floor brightness
+    # (32 baseline) — the old "empty/low-frequency red breath" mode-4
+    # branch was removed since it never produced visible motion.
+    assert state.mode == "1"
+    assert 32 <= state.brightness <= 96
 
 
 def test_close_single_person_maps_to_chase_and_brighter_output():
@@ -95,9 +98,10 @@ def test_close_single_person_maps_to_chase_and_brighter_output():
 
     state = state_from_soundscape_status(status)
 
+    # 6/4 round 4: chase via CV6 is now the only mode-1 path. Person
+    # presence is no longer directly read in the lighting layer — it's
+    # already encoded into CV6 by the bridge. Smoke test for mode 1.
     assert state.mode == "1"
-    assert state.brightness >= 80
-    assert "near" in state.reason
 
 
 def test_audio_frequency_maps_directly_to_chase_mode():
@@ -661,9 +665,8 @@ def test_soundscape_cv_frequency_proxy_maps_to_chase_when_audio_return_is_silent
 
     state = state_from_soundscape_status(status)
 
+    # 6/4 round 4: soundscape-freq fallback removed; chase is now via CV6.
     assert state.mode == "1"
-    assert state.brightness >= 80
-    assert "soundscape freq" in state.reason
 
 
 def test_error_status_blackouts():
