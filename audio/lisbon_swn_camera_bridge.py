@@ -815,7 +815,7 @@ class LisbonSwnMapper:
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             self.max_cv * (0.50 + 0.35 * (0.5 - centroid_y)),  # cv5 transpose (was dispersion 6/3)
             self.max_cv * mix_target,  # CV6 main mix VCA
-            0.0 if motion < 0.06 else self.max_cv,  # CV7 glitch trigger (6/4 r7: binary fire to max_cv)
+            0.0 if motion < 0.04 else self.max_cv,  # CV7 glitch trigger (6/4 r8: sensitivity bump 0.06→0.04)
             0.035 + 0.190 * activity,  # depth
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
@@ -931,7 +931,7 @@ class HumanAwareSwnMapper:
         motion sends a full-strength trigger.
         """
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
-        fire_threshold = 0.06   # below this: noise/breath, no fire
+        fire_threshold = 0.04   # 6/4 r8: bumped sensitivity 0.06 → 0.04. Catches gentler movement; still above YOLO bbox jitter noise floor (~0.01-0.02)
         if movement < fire_threshold:
             return 0.0
         return float(self.max_cv)
