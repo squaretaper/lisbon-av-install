@@ -258,16 +258,19 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     strobe_active = high_band_burst or bright_transient or mid_high_glitch or hard_high_frequency
 
     # PRIORITY 1: CV7 glitch direct strobe — full brightness (operator 6/4)
+    # CV7 is the ONLY strobe driver. Operator (6/4 round 2): "leds should
+    # always be realtime reactive. low freqs = running lights with some
+    # broken and pulsing chains. glitch = strobe." Mic transient is NOT
+    # a strobe trigger — it's an energy/brightness modulator for chase
+    # mode below. Same for the legacy spectrum path; pure CV7 contract.
     if glitch_trigger >= 0.40:
         return LightState(mode="2", brightness=255, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f}")
-    # PRIORITY 2: Mic transient direct strobe — full brightness
-    if mic_active and mic_transient >= 0.45:
-        return LightState(mode="2", brightness=255, reason=f"mic transient strobe {mic_transient:.2f} peak={mic_peak:.3f}")
-    # PRIORITY 3: legacy audio-spectrum strobe — full brightness
-    if audio_present and strobe_active and strobe_score >= 0.16:
-        return LightState(mode="2", brightness=255, reason=f"audio glitch strobe {strobe_score:.2f} band={high_band:.2f} centroid={spectral_centroid:.0f}Hz trans={transient:.2f}")
-    if (not audio_present) and soundscape_glitch >= 0.52:
-        return LightState(mode="2", brightness=max(112, brightness), reason=f"soundscape glitch {soundscape_glitch:.2f}")
+    # Soundscape-glitch fallback when ES-9 return is silent and CV7
+    # didn't quite cross 0.40 but the bridge's composite glitch score
+    # says the audio is glitching. Conservative threshold so a steady
+    # drone doesn't tickle it.
+    if (not audio_present) and soundscape_glitch >= 0.62:
+        return LightState(mode="2", brightness=255, reason=f"soundscape glitch {soundscape_glitch:.2f}")
     if audio_present and (freq_hz >= 1400 or high_freq >= 0.28):
         return LightState(mode="1", brightness=max(96, brightness), reason=f"audio high freq chase {freq_hz:.0f}Hz high={high_freq:.2f}")
     if audio_present:
