@@ -270,7 +270,10 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     # 6/4 r25: strobe also gets proximity-driven white. Closer person =
     # more photoflash energy. Capped at 127 (~50%). At full proximity
     # the strobe reads as a bright pink-white flash.
-    strobe_white = int(round(_clamp((1.0 - near) ** 2 * 127, 0, 127)))
+    # 6/4 r26 fix: gate on people > 0. Empty room reports near=0.0
+    # which the inversion read as max proximity -> full white. Empty
+    # room must stay pure red.
+    strobe_white = int(round(_clamp((1.0 - near) ** 2 * 127, 0, 127))) if people > 0 else 0
     if glitch_trigger >= 0.40:
         return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f} white={strobe_white}")
     # Soundscape-glitch fallback when ES-9 return is silent and CV7
@@ -323,9 +326,15 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     # red, a person right under the rig pushes the strip toward warm
     # white. Cap at 127 (~50% of full white). White only applied in
     # chase (mode 1) and glitch (mode 2) at the firmware layer.
-    proximity = 1.0 - near
-    white_max = 127  # 50% of full white blend
-    white_amount = int(round(_clamp(proximity * proximity * white_max, 0, white_max)))
+    # 6/4 r26 fix: gate on people > 0. Empty room reports near=0.0
+    # which the inversion read as max proximity = full white. Empty
+    # room must stay pure red.
+    if people > 0:
+        proximity = 1.0 - near
+        white_max = 127  # 50% of full white blend
+        white_amount = int(round(_clamp(proximity * proximity * white_max, 0, white_max)))
+    else:
+        white_amount = 0
     return LightState(
         mode="1",
         brightness=cv6_brightness,
