@@ -1617,10 +1617,54 @@ def main(argv: Sequence[str] | None = None) -> int:
             resolve_chord = None  # bridge still works without the palette module
 
     profile_path = status_path.parent / "heuristic_profile.json"
-    profile_state: dict[str, Any] = {"mtime": 0.0, "chord": None}
+    # 6/4 r16: tune knobs live in their own file to avoid the read-modify-
+    # write race that used to clobber `tune` updates when both tune.py and
+    # the realtime chord driver touched heuristic_profile.json. Polled
+    # independently from the chord profile; nothing else writes here.
+    tune_path = status_path.parent / "tune.json"
+    profile_state: dict[str, Any] = {"mtime": 0.0, "tune_mtime": 0.0, "chord": None, "tune_warned_legacy": False}
+
+    def _apply_tune(tune: dict) -> None:
+        """Push a tune dict into both detector and mapper. Silent if the
+        dict is empty; per-key set_tuning methods skip unchanged values.
+        """
+        if not isinstance(tune, dict) or not tune:
+            return
+        try:
+            person_tracker.set_tuning(
+                stillness_deadband=tune.get("stillness_deadband"),
+                match_threshold=tune.get("tracker_match_threshold"),
+            )
+        except Exception as exc:
+            print(f"[poll] tune tracker error: {exc!r}", flush=True)
+        try:
+            human_mapper.set_tuning(
+                glitch_fire_threshold=tune.get("glitch_fire_threshold"),
+                browse_rate_min_hz=tune.get("browse_rate_min_hz"),
+                browse_rate_max_hz=tune.get("browse_rate_max_hz"),
+                cv7_hold_ms=tune.get("cv7_hold_ms"),
+                cv7_release_ms=tune.get("cv7_release_ms"),
+            )
+        except Exception as exc:
+            print(f"[poll] tune mapper error: {exc!r}", flush=True)
 
     def poll_profile_loop() -> None:
         while not stop.is_set():
+            # --- tune.json (isolated, written only by scripts/tune.py) ---
+            try:
+                if tune_path.exists():
+                    tstat = tune_path.stat()
+                    if tstat.st_mtime != profile_state["tune_mtime"]:
+                        profile_state["tune_mtime"] = tstat.st_mtime
+                        tune_data = json.loads(tune_path.read_text(encoding="utf-8"))
+                        if isinstance(tune_data, dict):
+                            _apply_tune(tune_data)
+            except (OSError, json.JSONDecodeError) as exc:
+                print(f"[poll] tune.json io/json error: {exc!r}", flush=True)
+            except Exception as exc:
+                print(f"[poll] tune.json UNEXPECTED ERROR: {exc!r}", flush=True)
+
+            # --- heuristic_profile.json (chord layer, written by realtime driver) ---
             try:
                 stat = profile_path.stat()
                 if stat.st_mtime != profile_state["mtime"]:
@@ -1634,30 +1678,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                             expired = datetime.now(tz=timezone.utc) > expiry
                         except Exception:
                             expired = False
-                    # 6/4 r13: apply `tune` block from the profile to live
-                    # detector + mapper knobs. Independent of chord layer
-                    # and chord expiry — tuning persists across expired
-                    # profiles. This is the hot path that replaces source
-                    # PRs for threshold / rate adjustments.
-                    tune = data.get("tune") if isinstance(data.get("tune"), dict) else {}
-                    if tune:
-                        try:
-                            person_tracker.set_tuning(
-                                stillness_deadband=tune.get("stillness_deadband"),
-                                match_threshold=tune.get("tracker_match_threshold"),
-                            )
-                        except Exception as exc:
-                            print(f"[poll] tune tracker error: {exc!r}", flush=True)
-                        try:
-                            human_mapper.set_tuning(
-                                glitch_fire_threshold=tune.get("glitch_fire_threshold"),
-                                browse_rate_min_hz=tune.get("browse_rate_min_hz"),
-                                browse_rate_max_hz=tune.get("browse_rate_max_hz"),
-                                cv7_hold_ms=tune.get("cv7_hold_ms"),
-                                cv7_release_ms=tune.get("cv7_release_ms"),
-                            )
-                        except Exception as exc:
-                            print(f"[poll] tune mapper error: {exc!r}", flush=True)
+                    # Back-compat: pre-r16 tune values lived inside the
+                    # profile. If we still see one, apply it (low priority,
+                    # tune.json takes precedence by virtue of running after)
+                    # and warn ONCE so the operator migrates.
+                    legacy_tune = data.get("tune") if isinstance(data.get("tune"), dict) else {}
+                    if legacy_tune and not profile_state["tune_warned_legacy"]:
+                        print(
+                            "[poll] WARN legacy `tune` block in heuristic_profile.json — "
+                            "re-run scripts/tune.py to migrate to audio/runtime/tune.json",
+                            flush=True,
+                        )
+                        profile_state["tune_warned_legacy"] = True
+                    if legacy_tune and not tune_path.exists():
+                        _apply_tune(legacy_tune)
                     if not expired and resolve_chord is not None:
                         chord = resolve_chord(data.get("chord"))
                         profile_state["chord"] = chord

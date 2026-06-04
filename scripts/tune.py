@@ -1,32 +1,31 @@
 #!/usr/bin/env python3
-"""Live tuner — merge a `tune` block into heuristic_profile.json without restart.
+"""Live tuner — write hot-tunable knobs to an isolated file.
 
 Operator 6/4 r13: stop paying a bridge restart for every threshold tweak.
+Operator 6/4 r16: split tune state into its own file to eliminate the
+read-modify-write race between tune.py and the realtime chord driver.
+Both used to touch heuristic_profile.json every 750ms, and the driver's
+stale-snapshot writes could clobber tune updates.
 
-The bridge polls audio/runtime/heuristic_profile.json once per second
-and now applies any `tune` block to live detector + mapper knobs through
-PersonSceneTracker.set_tuning and HumanAwareSwnMapper.set_tuning. This
-script atomically merges new tune values into the profile so the next
-bridge poll picks them up — total round-trip ≤1.3s, zero CV freeze.
+Now: tune.py writes ONLY audio/runtime/tune.json. The bridge polls that
+file directly. The chord driver still owns heuristic_profile.json and
+never touches tune state. No more contention, no migration needed for
+the chord driver, no shared state to lock.
 
-Supported keys (current set; extend as new knobs become hot-tunable):
-
-  stillness_deadband        float, planar+distance delta below which
-                            movement signal is gated to 0 (typical 0.005-0.05)
-  tracker_match_threshold   float, centroid distance threshold for cross-id
-                            track state inheritance (typical 0.20-0.50)
-  glitch_fire_threshold     float, movement value above which CV7 fires to
-                            max_cv (typical 0.02-0.10)
-  browse_rate_min_hz        float, CV4 browse LFO rate at empty room
-                            (typical 0.005-0.05)
-  browse_rate_max_hz        float, CV4 browse LFO rate at full active room
-                            (typical 0.05-0.20)
+Supported keys:
+  stillness_deadband        movement gate below which signal is 0
+  tracker_match_threshold   centroid distance for cross-id inheritance
+  glitch_fire_threshold     movement value above which CV7 fires
+  browse_rate_min_hz        CV4 LFO rate at empty room
+  browse_rate_max_hz        CV4 LFO rate at full active room
+  cv7_hold_ms               full max_cv hold after glitch trigger
+  cv7_release_ms            exp-decay tau after hold expires
 
 Usage:
   scripts/tune.py glitch_fire_threshold=0.02
   scripts/tune.py stillness_deadband=0.006 tracker_match_threshold=0.45
-  scripts/tune.py --show                                # print current tune block
-  scripts/tune.py --clear                               # remove tune block entirely
+  scripts/tune.py --show
+  scripts/tune.py --clear
 """
 from __future__ import annotations
 
@@ -36,7 +35,9 @@ import os
 import sys
 from pathlib import Path
 
-PROFILE_PATH = Path(__file__).resolve().parent.parent / "audio" / "runtime" / "heuristic_profile.json"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TUNE_PATH = REPO_ROOT / "audio" / "runtime" / "tune.json"
+LEGACY_PROFILE_PATH = REPO_ROOT / "audio" / "runtime" / "heuristic_profile.json"
 
 ALLOWED_KEYS = {
     "stillness_deadband",
@@ -49,42 +50,67 @@ ALLOWED_KEYS = {
 }
 
 
-def load_profile() -> dict:
+def load_tune() -> dict:
+    """Read current tune file. Empty dict if missing or invalid."""
+    if not TUNE_PATH.exists():
+        return {}
     try:
-        return json.loads(PROFILE_PATH.read_text(encoding="utf-8"))
+        data = json.loads(TUNE_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"error reading {PROFILE_PATH}: {exc}", file=sys.stderr)
+        print(f"error reading {TUNE_PATH}: {exc}", file=sys.stderr)
         sys.exit(2)
 
 
-def write_profile_atomic(profile: dict) -> None:
-    tmp_path = PROFILE_PATH.with_suffix(PROFILE_PATH.suffix + ".tune.tmp")
+def write_tune_atomic(tune: dict) -> None:
+    TUNE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = TUNE_PATH.with_suffix(TUNE_PATH.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(tune, indent=2, sort_keys=True), encoding="utf-8")
+    os.replace(tmp_path, TUNE_PATH)
+
+
+def clear_legacy_tune_in_profile() -> None:
+    """One-shot migration helper: if a `tune` block still lingers in
+    heuristic_profile.json from before the split, remove it so the
+    bridge doesn't get conflicting values from two sources. Safe to
+    call repeatedly; no-op when there's nothing to clear.
+    """
+    if not LEGACY_PROFILE_PATH.exists():
+        return
+    try:
+        profile = json.loads(LEGACY_PROFILE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if "tune" not in profile:
+        return
+    profile.pop("tune", None)
+    tmp_path = LEGACY_PROFILE_PATH.with_suffix(LEGACY_PROFILE_PATH.suffix + ".tune-migrate.tmp")
     tmp_path.write_text(json.dumps(profile, indent=2, sort_keys=True), encoding="utf-8")
-    os.replace(tmp_path, PROFILE_PATH)
+    os.replace(tmp_path, LEGACY_PROFILE_PATH)
+    print(f"(migrated stale `tune` block out of {LEGACY_PROFILE_PATH.name})")
 
 
 def show() -> None:
-    profile = load_profile()
-    tune = profile.get("tune") or {}
+    tune = load_tune()
     if not tune:
-        print("(no tune block set)")
+        print("(no tune values set)")
         return
     print(json.dumps(tune, indent=2, sort_keys=True))
 
 
 def clear() -> None:
-    profile = load_profile()
-    if "tune" not in profile:
-        print("(no tune block to clear)")
+    if not TUNE_PATH.exists():
+        print("(no tune file to clear)")
         return
-    profile.pop("tune", None)
-    write_profile_atomic(profile)
-    print("cleared tune block")
+    write_tune_atomic({})
+    print("cleared tune values")
 
 
 def apply(pairs: list[str]) -> None:
-    profile = load_profile()
-    tune = dict(profile.get("tune") or {})
+    # First-time use: migrate any leftover tune block out of the legacy
+    # profile so we don't end up with two competing tune sources.
+    clear_legacy_tune_in_profile()
+    tune = load_tune()
     for pair in pairs:
         if "=" not in pair:
             print(f"bad pair '{pair}' — expected key=value", file=sys.stderr)
@@ -98,16 +124,15 @@ def apply(pairs: list[str]) -> None:
         except ValueError:
             print(f"value '{value_str}' for '{key}' is not a float", file=sys.stderr)
             sys.exit(2)
-    profile["tune"] = tune
-    write_profile_atomic(profile)
-    print(f"merged tune block: {json.dumps(tune, sort_keys=True)}")
+    write_tune_atomic(tune)
+    print(f"wrote tune file: {json.dumps(tune, sort_keys=True)}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--show", action="store_true", help="print current tune block and exit")
-    parser.add_argument("--clear", action="store_true", help="remove tune block entirely and exit")
-    parser.add_argument("pairs", nargs="*", help="key=value pairs to merge into the tune block")
+    parser.add_argument("--show", action="store_true", help="print current tune values and exit")
+    parser.add_argument("--clear", action="store_true", help="remove all tune values and exit")
+    parser.add_argument("pairs", nargs="*", help="key=value pairs to merge into the tune file")
     args = parser.parse_args(argv)
 
     if args.show:
@@ -118,9 +143,8 @@ def main(argv: list[str] | None = None) -> int:
         apply(args.pairs)
     else:
         parser.print_help()
-        return 1
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
