@@ -181,11 +181,13 @@ MOVEMENT_SOURCE_BBOX = "bbox"
 MOVEMENT_SOURCE_POSE = "pose"
 MOVEMENT_SOURCE_POSE_RAISE = "pose_raise"
 MOVEMENT_SOURCE_BBOX_RAISE = "bbox_raise"
+MOVEMENT_SOURCE_ARM_EXTENSION = "arm_extension"
 _VALID_MOVEMENT_SOURCES = {
     MOVEMENT_SOURCE_BBOX,
     MOVEMENT_SOURCE_POSE,
     MOVEMENT_SOURCE_POSE_RAISE,
     MOVEMENT_SOURCE_BBOX_RAISE,
+    MOVEMENT_SOURCE_ARM_EXTENSION,
 }
 
 # Keypoints we trust for "gesture" motion. Hands, feet, head, and elbows.
@@ -321,6 +323,74 @@ def _bbox_raise_magnitude(width: float, height: float) -> float:
     return min(1.0, scaled)
 
 
+# 6/4 r23: top-down "arm extension" source. From a bird's-eye camera
+# the standard "wrist above elbow" check fails because vertical
+# motion in 3D collapses to ~0 motion in the image plane. But arm
+# EXTENSION is preserved: when arms hang at the sides, wrists sit
+# close to the shoulder line (distance ~= forearm length viewed
+# vertically, projected ~0). When arms reach out or up, wrists move
+# away from the shoulder line in image space.
+#
+# Signal = max wrist-to-shoulder-midpoint distance / torso reference
+# length, across both arms. Torso reference = shoulder-to-hip distance
+# in image, normalised by frame diagonal. Saturates when wrist is at
+# ~1.5x torso length from shoulder midpoint (a fully extended arm).
+_EXTENSION_SATURATION = 1.5
+
+
+def _arm_extension_magnitude(
+    keypoints: dict[int, tuple[float, float, float]] | None,
+) -> float:
+    """Max wrist-to-shoulder-midpoint distance / torso length.
+
+    Works on top-down camera installs because the metric is image-plane
+    distance from a stable anatomical reference (shoulder midpoint),
+    NOT vertical position which collapses under foreshortening.
+
+    Returns 0.0 when keypoints are missing, low confidence, or when
+    the torso reference can't be established. Saturates at 1.0 when
+    a wrist is ~1.5 torso-lengths from the shoulder line.
+    """
+    if not keypoints:
+        return 0.0
+    # Need shoulders + hips for the torso reference.
+    l_shldr = keypoints.get(5)
+    r_shldr = keypoints.get(6)
+    l_hip = keypoints.get(11)
+    r_hip = keypoints.get(12)
+    if not (l_shldr and r_shldr):
+        return 0.0
+    if l_shldr[2] < _KEYPOINT_MIN_CONFIDENCE or r_shldr[2] < _KEYPOINT_MIN_CONFIDENCE:
+        return 0.0
+    shldr_mid_x = (l_shldr[0] + r_shldr[0]) * 0.5
+    shldr_mid_y = (l_shldr[1] + r_shldr[1]) * 0.5
+    # Torso reference: shoulder-mid to hip-mid distance. Fall back to
+    # inter-shoulder width when hips are unreliable (top-down view
+    # often loses hip confidence first).
+    torso_len = 0.0
+    if l_hip and r_hip and l_hip[2] >= _KEYPOINT_MIN_CONFIDENCE and r_hip[2] >= _KEYPOINT_MIN_CONFIDENCE:
+        hip_mid_x = (l_hip[0] + r_hip[0]) * 0.5
+        hip_mid_y = (l_hip[1] + r_hip[1]) * 0.5
+        torso_len = math.hypot(hip_mid_x - shldr_mid_x, hip_mid_y - shldr_mid_y)
+    if torso_len < 0.02:
+        # Degenerate torso (top-down with body collapsed onto self) —
+        # use inter-shoulder width as the reference instead.
+        torso_len = math.hypot(r_shldr[0] - l_shldr[0], r_shldr[1] - l_shldr[1])
+    if torso_len < 0.02:
+        return 0.0
+    # Check each wrist's distance from the shoulder midpoint.
+    best = 0.0
+    for wrist_idx in (9, 10):
+        wrist = keypoints.get(wrist_idx)
+        if not wrist or wrist[2] < _KEYPOINT_MIN_CONFIDENCE:
+            continue
+        dist = math.hypot(wrist[0] - shldr_mid_x, wrist[1] - shldr_mid_y)
+        normalised = dist / torso_len
+        if normalised > best:
+            best = normalised
+    return min(1.0, best / _EXTENSION_SATURATION)
+
+
 class PersonSceneTracker:
     """Stable ID and scene summary layer for person detections.
 
@@ -447,6 +517,13 @@ class PersonSceneTracker:
                 bbox_w_px = abs(float(x2) - float(x1))
                 bbox_h_px = abs(float(y2) - float(y1))
                 raise_mag = _bbox_raise_magnitude(bbox_w_px, bbox_h_px)
+                if raise_mag <= self.stillness_deadband:
+                    movement = 0.0
+                else:
+                    movement = float(raise_mag)
+                age = previous.age + 1 if previous is not None else 1
+            elif self.movement_source == MOVEMENT_SOURCE_ARM_EXTENSION and obs.keypoints is not None:
+                raise_mag = _arm_extension_magnitude(obs.keypoints)
                 if raise_mag <= self.stillness_deadband:
                     movement = 0.0
                 else:
