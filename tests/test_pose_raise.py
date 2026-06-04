@@ -94,17 +94,18 @@ def test_tracker_pose_raise_fires_first_frame_no_history_needed():
                            confidence=0.9, keypoints=kp)],
         frame_size=(640, 480), dt=0.2,
     )
-    assert scene.tracks[0].movement == 0.0  # first frame is always 0 (no previous)
+    # r21 fix: pose_raise now fires from frame 1 (was 0.0 — the bug)
+    assert scene.tracks[0].movement == 1.0
     # Second frame, arm still up
     scene = tracker.update(
         [PersonObservation(track_id=1, bbox_xyxy=(100, 100, 200, 400),
                            confidence=0.9, keypoints=kp)],
         frame_size=(640, 480), dt=0.2,
     )
-    assert scene.tracks[0].movement == 1.0  # static arm-up = full signal
+    assert scene.tracks[0].movement == 1.0
 
 
-def test_tracker_pose_raise_drops_instantly_on_arm_down():
+def test_tracker_pose_raise_drops_instantly_on_arm_down(tmp_path, monkeypatch):
     """Arm-down on the very next frame should report movement=0,
     not decay slowly. The CV7 latch handles smooth release downstream."""
     tracker = PersonSceneTracker(
@@ -156,7 +157,46 @@ def test_tracker_pose_raise_silent_on_walking_with_arms_at_side():
     assert scene.tracks[0].movement == 0.0
 
 
-def test_tune_script_accepts_pose_raise_value(tmp_path, monkeypatch):
+def test_raise_magnitude_ignores_head_only_detections():
+    """Person cropped to head/shoulders at top of frame: pose model
+    sometimes hallucinates elbow/wrist keypoints clustered in the top
+    10% of frame. These produce phantom fires. Should be skipped."""
+    kp = {
+        7: (0.30, 0.05, 0.7),    # L elbow in top 5% of frame
+        9: (0.30, 0.02, 0.7),    # L wrist also in top 5% — head-only crop
+    }
+    assert _raise_magnitude(kp) == 0.0
+
+
+def test_raise_magnitude_still_fires_if_only_one_keypoint_is_high():
+    """If wrist is high in frame but elbow is well below (genuine
+    arm raise from below), the signal must still fire."""
+    kp = {
+        7: (0.30, 0.40, 0.9),    # elbow at mid-frame
+        9: (0.30, 0.05, 0.9),    # wrist high — real raise
+    }
+    assert _raise_magnitude(kp) > 0.5  # big elevation
+
+
+def test_tracker_pose_raise_fires_on_first_frame_with_arms_raised():
+    """ByteTrack id churn produces frequent first-frame allocations
+    during motion. pose_raise is a position signal — it must fire on
+    frame 1 with arms up, not wait for a previous frame."""
+    tracker = PersonSceneTracker(
+        stillness_deadband=0.01,
+        movement_source=MOVEMENT_SOURCE_POSE_RAISE,
+    )
+    kp = {7: (0.30, 0.50, 0.9), 9: (0.30, 0.20, 0.9)}  # arm fully raised
+    scene = tracker.update(
+        [PersonObservation(track_id=42, bbox_xyxy=(100, 100, 200, 400),
+                           confidence=0.9, keypoints=kp)],
+        frame_size=(640, 480), dt=0.2,
+    )
+    # First frame must report the raise — was 0.0 before the fix
+    assert scene.tracks[0].movement == 1.0
+
+
+def test_tune_script_round_trips_pose_raise_value(tmp_path, monkeypatch):
     import importlib.util, json
     from pathlib import Path
     repo = Path(__file__).resolve().parent.parent

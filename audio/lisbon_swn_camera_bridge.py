@@ -241,6 +241,14 @@ def _raise_magnitude(
     confident; if either falls below _KEYPOINT_MIN_CONFIDENCE the arm
     is skipped. Returns 0.0 when no arm qualifies.
 
+    6/4 r21 — guards against head-only detections: a person cropped to
+    just their head/shoulders at the top of the frame can have YOLO
+    pose hallucinate "elbow" and "wrist" keypoints all clustered in
+    the top 10% of frame. The elbow→wrist delta is tiny but technically
+    above zero, producing phantom fires. We reject any arm where BOTH
+    elbow and wrist sit above frame y=0.10 (top 10%), which is the
+    region where a real person's elbows/wrists almost never appear.
+
     Unlike _max_keypoint_delta this is a POSITION signal, not a velocity
     signal — wrist held above elbow continues to read non-zero across
     frames, so the CV7 latch holds full max_cv for the entire raise.
@@ -256,6 +264,11 @@ def _raise_magnitude(
         wx, wy, wc = keypoints[wrist_idx]
         ex, ey, ec = keypoints[elbow_idx]
         if wc < _KEYPOINT_MIN_CONFIDENCE or ec < _KEYPOINT_MIN_CONFIDENCE:
+            continue
+        # 6/4 r21: skip head-only detections. If both elbow and wrist
+        # are in the top 10% of frame, the pose model is almost
+        # certainly hallucinating limb positions around a head crop.
+        if ey < 0.10 and wy < 0.10:
             continue
         # Elevation: how far the wrist sits above the elbow in image
         # coords. Positive when raised, negative or zero when arm hangs.
@@ -369,58 +382,58 @@ class PersonSceneTracker:
             else:
                 stable_id = self._next_stable_id
                 self._next_stable_id += 1
-            if previous is None:
+            # 6/4 r17/r20/r21: movement source is selectable.
+            #   POSE        — velocity (max keypoint delta / dt)  REQUIRES previous frame
+            #   POSE_RAISE  — postural (wrist-above-elbow magnitude)  NO previous needed
+            #   BBOX        — velocity (planar+distance delta / dt)  REQUIRES previous frame
+            #
+            # POSE_RAISE is special: it's a position signal computed
+            # purely from the current frame's keypoints. ByteTrack id
+            # churn produces frequent first-frame allocations during
+            # motion — if we gate raise on `previous is not None` the
+            # signal vanishes exactly when the operator wants it.
+            if self.movement_source == MOVEMENT_SOURCE_POSE_RAISE and obs.keypoints is not None:
+                raise_mag = _raise_magnitude(obs.keypoints)
+                if raise_mag <= self.stillness_deadband:
+                    movement = 0.0
+                else:
+                    movement = float(raise_mag)
+                age = previous.age + 1 if previous is not None else 1
+            elif previous is None:
                 movement = 0.0
                 age = 1
             else:
-                # 6/4 r17/r20: movement source is selectable.
-                #   POSE        — velocity (max keypoint delta / dt)
-                #   POSE_RAISE  — postural (wrist-above-elbow magnitude)
-                #   BBOX        — velocity (planar+distance delta / dt)
-                if self.movement_source == MOVEMENT_SOURCE_POSE_RAISE and obs.keypoints is not None:
-                    # Position signal: raw 0..1 magnitude, NO dt scaling.
-                    # Arms-up reads non-zero every frame; arms-down drops
-                    # to 0 immediately. Operator wanted responsive decay
-                    # on arm-down — combine this with cv7_hold_ms=0 so
-                    # release starts the instant arms fall.
-                    raise_mag = _raise_magnitude(obs.keypoints)
-                    if raise_mag <= self.stillness_deadband:
-                        movement = 0.0
-                    else:
-                        movement = float(raise_mag)
-                    age = previous.age + 1
-                else:
-                    use_pose = (
-                        self.movement_source == MOVEMENT_SOURCE_POSE
-                        and obs.keypoints is not None
-                        and previous.keypoints is not None
-                    )
-                    if use_pose:
-                        assert obs.keypoints is not None and previous.keypoints is not None
-                        delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
-                        if delta == 0.0:
-                            # No shared confident keypoints (e.g. person turned
-                            # away, occluded limbs) — fall back to bbox signal
-                            # so we don't silently mute movement.
-                            planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
-                            distance_delta = abs(metrics["distance"] - previous.distance)
-                            delta = max(planar_delta, distance_delta)
-                    else:
-                        # 6/4 r11: composite = max(planar_delta, distance_delta).
-                        # Walking toward camera shows up in distance even when
-                        # planar barely shifts.
+                use_pose = (
+                    self.movement_source == MOVEMENT_SOURCE_POSE
+                    and obs.keypoints is not None
+                    and previous.keypoints is not None
+                )
+                if use_pose:
+                    assert obs.keypoints is not None and previous.keypoints is not None
+                    delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
+                    if delta == 0.0:
+                        # No shared confident keypoints (e.g. person turned
+                        # away, occluded limbs) — fall back to bbox signal
+                        # so we don't silently mute movement.
                         planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
                         distance_delta = abs(metrics["distance"] - previous.distance)
                         delta = max(planar_delta, distance_delta)
-                    if delta <= self.stillness_deadband:
-                        # Below deadband — gate movement signal to absorb YOLO
-                        # bbox jitter, but always advance position metrics (see
-                        # 6/4 r10) so cumulative drift across sub-deadband frames
-                        # eventually fires when it exceeds the threshold.
-                        movement = 0.0
-                    else:
-                        movement = _clamp01(delta / max(0.03, dt * 0.65))
-                    age = previous.age + 1
+                else:
+                    # 6/4 r11: composite = max(planar_delta, distance_delta).
+                    # Walking toward camera shows up in distance even when
+                    # planar barely shifts.
+                    planar_delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
+                    distance_delta = abs(metrics["distance"] - previous.distance)
+                    delta = max(planar_delta, distance_delta)
+                if delta <= self.stillness_deadband:
+                    # Below deadband — gate movement signal to absorb YOLO
+                    # bbox jitter, but always advance position metrics (see
+                    # 6/4 r10) so cumulative drift across sub-deadband frames
+                    # eventually fires when it exceeds the threshold.
+                    movement = 0.0
+                else:
+                    movement = _clamp01(delta / max(0.03, dt * 0.65))
+                age = previous.age + 1
 
             self._tracks[track_id] = _TrackMemory(
                 id=track_id,
