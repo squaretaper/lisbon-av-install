@@ -22,5 +22,7 @@ exec python audio/lisbon_swn_camera_bridge.py \
   --stillness-frame-motion "${LISBON_STILLNESS_FRAME_MOTION:-0.03}" \
   --preview-hz "${LISBON_PREVIEW_HZ:-10}" \
   --yolo-model "${LISBON_YOLO_MODEL:-yolo11n.pt}" \
+  --yolo-conf "${LISBON_YOLO_CONF:-0.15}" \
+  --yolo-imgsz "${LISBON_YOLO_IMGSZ:-640}" \
   --status-path "${LISBON_STATUS_PATH:-audio/runtime/swn_camera_soundscape_status.json}" \
   --preview-path "${LISBON_PREVIEW_PATH:-audio/runtime/swn_camera_people_preview.jpg}"
