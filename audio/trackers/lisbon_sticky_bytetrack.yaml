@@ -1,0 +1,41 @@
+# Lisbon AV install — custom ByteTrack config tuned for stable IDs.
+#
+# Operator 6/4 r9: "can we get better yolo lock on people."
+# Live observation: the same person Pablo got tracked across 7 different
+# IDs in 28s of testing (id43 → 343 → 346 → 347 → 350 → 353 → 354), which
+# zeroed CV7 movement on every ID reset and broke continuity of the
+# bridge's per-track state.
+#
+# Tuning targets ID STABILITY without lowering DETECTION sensitivity
+# (Pablo wants conf to stay at 0.25). The defaults that hurt us:
+#
+#   track_buffer 30      — lost tracks die after 30 frames = 6s at 5Hz.
+#                          Brief drops (1-2s of occlusion) killed the ID.
+#   match_thresh 0.8     — strict IoU. A track that bounces between
+#                          detections of slightly different bbox shape
+#                          (e.g. partial occlusion) fails to associate.
+#   new_track_thresh 0.25 — same as detection threshold. ANY marginal
+#                          detection starts a new ID if no match. That's
+#                          how we got 7 IDs from one person.
+#
+# Changes here:
+#
+#   track_buffer 30 → 150  ~30s at 5Hz. A person who steps out of frame
+#                          for half a minute still re-acquires the same
+#                          ID when they return.
+#   match_thresh 0.8 → 0.6 looser IoU so bbox shape variation across
+#                          frames still associates.
+#   new_track_thresh 0.25 → 0.50  marginal detections (0.25-0.50 conf)
+#                          can only EXTEND existing tracks via the
+#                          low-thresh second pass — they cannot SPAWN
+#                          new IDs. This is the big ID-stability win.
+#   track_low_thresh 0.10 → 0.05 more aggressive second-pass recovery
+#                          so a single dim frame still associates.
+
+tracker_type: bytetrack
+track_high_thresh: 0.25
+track_low_thresh: 0.05
+new_track_thresh: 0.50
+track_buffer: 150
+match_thresh: 0.6
+fuse_score: True
