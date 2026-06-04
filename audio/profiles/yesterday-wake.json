@@ -31,13 +31,13 @@
   },
   "mode_bias": "wake",
   "profile_id": "yesterday-distilled-wake",
-  "reason": "median chord block from 9 samples in family=wake on 2026-06-03",
+  "reason": "distilled from profile_history.jsonl 2026-06-03 \u2014 median chord block from 9 samples in family=wake on 2026-06-03",
   "scene": {
     "avoid_repetition_seconds": 0.0,
     "density_target": 0.4972,
     "silence_hold_seconds": 4.4543
   },
   "schema": "lisbon.heuristic_profile.v1",
-  "source": "distilled_from_profile_history_2026-06-03",
+  "source": "manual",
   "updated_at": "2026-06-03T20:02:32Z"
 }

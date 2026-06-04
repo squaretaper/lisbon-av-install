@@ -588,7 +588,11 @@ def test_soundscape_cv_glitch_proxy_overrides_group_when_audio_return_is_silent(
 
     assert state.mode == "2"
     assert state.brightness >= 112
-    assert "soundscape glitch" in state.reason
+    # 6/4: CV7 glitch_trigger >= 0.40 of max_cv (0.16 / 0.20 = 0.80 normalized)
+    # now fires the PRIORITY 1 direct strobe path. The legacy "soundscape glitch"
+    # path is reserved for the cv7 < 0.40 case where dispersion/depth/main_mix
+    # together still cross 0.52 on the soundscape_glitch score.
+    assert "cv7 glitch direct strobe" in state.reason
 
 
 def test_soundscape_cv_frequency_proxy_maps_to_chase_when_audio_return_is_silent():
@@ -610,7 +614,7 @@ def test_soundscape_cv_frequency_proxy_maps_to_chase_when_audio_return_is_silent
             "cv4_wavetable_browse": 0.18,
             "cv5_dispersion": 0.03,
             "cv6_dispersion_pattern": 0.03,
-            "cv7_movement_gate": 0.16,
+            "cv7_movement_gate": 0.06,  # 6/4: kept below 0.40 of max_cv 0.20 (=0.30 normalized) so the new CV7 direct-strobe path does NOT trigger; this test asserts the chase fallback when browse is the dominant CV
             "cv8_depth": 0.04,
         },
     )

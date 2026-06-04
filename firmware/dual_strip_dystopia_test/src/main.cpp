@@ -186,7 +186,9 @@ uint16_t wrappedDistance(uint16_t a, uint16_t b) {
 
 void chasePattern(uint32_t t) {
   // Mostly black canvas: the low-frequency drone should be present as motion,
-  // not as every LED being permanently lit.
+  // not as every LED being permanently lit. BUT on low drones (wide span)
+  // operator (6/4) wants ~2x packet density and more "broken" texture —
+  // random sparks + extra phantom packets that flicker in and out.
   fill_solid(stripJ1, NUM_LEDS, CRGB::Black);
   fill_solid(stripJ2, NUM_LEDS, CRGB::Black);
 
@@ -199,16 +201,26 @@ void chasePattern(uint32_t t) {
   uint8_t halfSpan = span / 2;
   if (halfSpan < 4) halfSpan = 4;
 
+  // Density mode: low drones (wide span = lots of cross-rhythm) get the
+  // extra-packet layer + scatter sparks. Higher drones (tight span) stay
+  // sparse to keep the original "machines chasing" feel.
+  bool denseDrone = span >= 24;
+
   // The Mac maps the actual drone frequency into stepMs and span. Low drones
   // move more slowly and use wider cross-rhythm offsets; higher drones tighten
   // into smaller, quicker packets.
   uint32_t phaseA = t / stepMs;
   uint32_t phaseB = t / (stepMs + 9 + span / 3);
   uint32_t phaseC = t / (stepMs + 17 + span / 2);
+  uint32_t phaseD = t / (stepMs + 5 + halfSpan);     // new: 4th cross-phase for density
   uint16_t p1 = phaseA % NUM_LEDS;
   uint16_t p2 = (NUM_LEDS + span - 1 - (phaseB % NUM_LEDS)) % NUM_LEDS;
   uint16_t p3 = (phaseA / 2 + halfSpan) % NUM_LEDS;
   uint16_t p4 = (NUM_LEDS + NUM_LEDS / 2 + span / 3 - (phaseC % NUM_LEDS)) % NUM_LEDS;
+  uint16_t p5 = (phaseD + NUM_LEDS / 3) % NUM_LEDS;
+  uint16_t p6 = (NUM_LEDS + NUM_LEDS / 4 - (phaseD * 2 % NUM_LEDS)) % NUM_LEDS;
+  uint16_t p7 = (phaseB + phaseC + halfSpan) % NUM_LEDS;
+  uint16_t p8 = (NUM_LEDS + NUM_LEDS * 2 / 3 - (phaseA + phaseC) % NUM_LEDS) % NUM_LEDS;
 
   uint8_t pulsePeriod = 11 + stepMs / 12;
   uint8_t ghostPeriod = 17 + span / 2;
@@ -232,6 +244,47 @@ void chasePattern(uint32_t t) {
     redPacket(stripJ1, p3 + span / 3, 1, satellite);
     redPacket(stripJ1, p4 - span / 4, -1, satellite);
     redPacket(stripJ2, p2 + halfSpan, -1, satellite);
+  }
+
+  if (denseDrone) {
+    // Extra packet density layer for low drones. These packets phase-shift
+    // against the primaries so the strip reads as ~2x as lit without
+    // becoming a steady wash. Brightness is intentionally between peak and
+    // satellite so they don't dominate the primary motion.
+    uint8_t denseLevel = qadd8(48, scale8(pulse, gPulseDepth * 3 / 4));
+    uint8_t denseGhost = qadd8(36, scale8(subPulse, gPulseDepth / 2));
+    redPacket(stripJ1, p5, 1, denseLevel);
+    redPacket(stripJ1, p6, -1, denseGhost);
+    redPacket(stripJ1, p7, 1, denseGhost);
+    redPacket(stripJ2, p5, -1, denseLevel);
+    redPacket(stripJ2, p7, 1, denseGhost);
+    redPacket(stripJ2, p8, -1, denseLevel);
+
+    // "Broken" texture: scatter ~8-14 random low-level sparks per frame on
+    // each strip. The random16() seed advances with t so sparks twinkle
+    // instead of holding a static dither. Sparks are additive (addWrappedRed)
+    // so they reinforce packet bodies without erasing them. Density tied
+    // to span so wider/lower drones get more chaos.
+    uint8_t sparkCount = 8 + (span - 24) / 3;     // 8..14
+    if (sparkCount > 16) sparkCount = 16;
+    uint8_t sparkLevel = 22 + scale8(subPulse, 28); // 22..50
+    for (uint8_t k = 0; k < sparkCount; ++k) {
+      uint16_t s1 = random16() % NUM_LEDS;
+      uint16_t s2 = random16() % NUM_LEDS;
+      addWrappedRed(stripJ1, s1, sparkLevel);
+      addWrappedRed(stripJ2, s2, sparkLevel);
+    }
+
+    // Occasional 2-3 LED random-burst — small clusters of "wrong" pixels that
+    // appear for one frame and disappear. Reads as static breakthrough in
+    // the otherwise rhythmic chase.
+    if ((t % (260 + span * 4)) < 32) {
+      uint8_t burstCount = 3 + (random8() & 0x3);
+      for (uint8_t k = 0; k < burstCount; ++k) {
+        addWrappedRed(stripJ1, random16() % NUM_LEDS, 96);
+        addWrappedRed(stripJ2, random16() % NUM_LEDS, 96);
+      }
+    }
   }
 
   uint8_t collisionWindow = 3 + span / 14;
