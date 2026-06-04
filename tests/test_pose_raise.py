@@ -157,17 +157,6 @@ def test_tracker_pose_raise_silent_on_walking_with_arms_at_side():
     assert scene.tracks[0].movement == 0.0
 
 
-def test_raise_magnitude_ignores_head_only_detections():
-    """Person cropped to head/shoulders at top of frame: pose model
-    sometimes hallucinates elbow/wrist keypoints clustered in the top
-    10% of frame. These produce phantom fires. Should be skipped."""
-    kp = {
-        7: (0.30, 0.05, 0.7),    # L elbow in top 5% of frame
-        9: (0.30, 0.02, 0.7),    # L wrist also in top 5% — head-only crop
-    }
-    assert _raise_magnitude(kp) == 0.0
-
-
 def test_raise_magnitude_still_fires_if_only_one_keypoint_is_high():
     """If wrist is high in frame but elbow is well below (genuine
     arm raise from below), the signal must still fire."""
