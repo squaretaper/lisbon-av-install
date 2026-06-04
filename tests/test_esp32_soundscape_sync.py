@@ -154,10 +154,12 @@ def test_audio_glitch_score_overrides_people_activity_to_glitch_mode():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "2"
-    assert state.brightness >= 112
-    assert "glitch" in state.reason
-
+    # 6/4 round 2: CV7 is the ONLY strobe driver. Spectrum-only paths
+    # (legacy "audio glitch strobe") that used to fire mode 2 from high-band /
+    # transient / centroid content alone now stay in chase mode (mode 1) so
+    # the audience never sees an unexpected strobe from incidental room sound
+    # picked up on the ES-9 return. CV7 fires strobe; everything else chases.
+    assert state.mode != "2", f"spectrum-only path should not strobe in CV7-only contract; got mode={state.mode!r} reason={state.reason!r}"
 
 def test_low_drone_audio_maps_to_chasing_breathing_pulse_not_people_fallback():
     status = status_template(
@@ -459,9 +461,12 @@ def test_high_band_glitch_burst_triggers_strobe_even_when_dominant_drone_remains
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "2"
-    assert "strobe" in state.reason
-
+    # 6/4 round 2: CV7 is the ONLY strobe driver. Spectrum-only paths
+    # (legacy "audio glitch strobe") that used to fire mode 2 from high-band /
+    # transient / centroid content alone now stay in chase mode (mode 1) so
+    # the audience never sees an unexpected strobe from incidental room sound
+    # picked up on the ES-9 return. CV7 fires strobe; everything else chases.
+    assert state.mode != "2", f"spectrum-only path should not strobe in CV7-only contract; got mode={state.mode!r} reason={state.reason!r}"
 
 def test_high_frequency_glitch_audio_maps_to_strobic_fault_mode():
     status = status_template(
@@ -494,10 +499,12 @@ def test_high_frequency_glitch_audio_maps_to_strobic_fault_mode():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "2"
-    assert state.brightness >= 208
-    assert "strobe" in state.reason
-
+    # 6/4 round 2: CV7 is the ONLY strobe driver. Spectrum-only paths
+    # (legacy "audio glitch strobe") that used to fire mode 2 from high-band /
+    # transient / centroid content alone now stay in chase mode (mode 1) so
+    # the audience never sees an unexpected strobe from incidental room sound
+    # picked up on the ES-9 return. CV7 fires strobe; everything else chases.
+    assert state.mode != "2", f"spectrum-only path should not strobe in CV7-only contract; got mode={state.mode!r} reason={state.reason!r}"
 
 def test_transient_score_field_from_audio_bridge_triggers_strobic_fault_mode():
     status = status_template(
@@ -523,10 +530,12 @@ def test_transient_score_field_from_audio_bridge_triggers_strobic_fault_mode():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "2"
-    assert state.brightness >= 128
-    assert "strobe" in state.reason
-
+    # 6/4 round 2: CV7 is the ONLY strobe driver. Spectrum-only paths
+    # (legacy "audio glitch strobe") that used to fire mode 2 from high-band /
+    # transient / centroid content alone now stay in chase mode (mode 1) so
+    # the audience never sees an unexpected strobe from incidental room sound
+    # picked up on the ES-9 return. CV7 fires strobe; everything else chases.
+    assert state.mode != "2", f"spectrum-only path should not strobe in CV7-only contract; got mode={state.mode!r} reason={state.reason!r}"
 
 def test_live_calibrated_mid_high_glitch_peak_triggers_strobe_not_drone_chase():
     status = status_template(
@@ -552,9 +561,12 @@ def test_live_calibrated_mid_high_glitch_peak_triggers_strobe_not_drone_chase():
 
     state = state_from_soundscape_status(status)
 
-    assert state.mode == "2"
-    assert "strobe" in state.reason
-
+    # 6/4 round 2: CV7 is the ONLY strobe driver. Spectrum-only paths
+    # (legacy "audio glitch strobe") that used to fire mode 2 from high-band /
+    # transient / centroid content alone now stay in chase mode (mode 1) so
+    # the audience never sees an unexpected strobe from incidental room sound
+    # picked up on the ES-9 return. CV7 fires strobe; everything else chases.
+    assert state.mode != "2", f"spectrum-only path should not strobe in CV7-only contract; got mode={state.mode!r} reason={state.reason!r}"
 
 def test_soundscape_cv_glitch_proxy_overrides_group_when_audio_return_is_silent():
     status = status_template(

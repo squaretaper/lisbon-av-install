@@ -313,13 +313,21 @@ void chasePattern(uint32_t t) {
 
 void glitchPattern(uint32_t t) {
   // High-frequency audio glitches: brutal pure-red flashes against actual black.
+  // Realtime-reactive (6/4 round 2): the OLD design held strobe ON for the
+  // first 420ms after mode entry so a single trigger always produced a
+  // noticeable burst. But the sync now drops back to mode 1 the next status
+  // tick (~20ms) when CV7 falls, which left the strip strobing for 400ms
+  // of "ghost" after CV7 was already gone. Operator wants frame-accurate:
+  // strobe duration = CV7 duration. Removed the 420ms hold; the periodic
+  // gate alone provides the visible hard-strobe rhythm while the mode is
+  // active.
   bool blackGate = ((t - modeStartedAt) % 124) >= 42 && ((t - modeStartedAt) % 124) < 76;
   if (blackGate) {
     blackout();
     return;
   }
 
-  bool strobeGate = (t - modeStartedAt) < 420 || (t % 72) < 34 || ((t + 57) % 190) < 28;
+  bool strobeGate = (t % 72) < 34 || ((t + 57) % 190) < 28;
   if (strobeGate) {
     fill_solid(stripJ1, NUM_LEDS, CRGB(255, 0, 0));
     fill_solid(stripJ2, NUM_LEDS, CRGB(255, 0, 0));
