@@ -118,6 +118,12 @@ class PersonTrack:
     # 6/4 r18: keypoints carried to renderers so the preview overlay can
     # draw a skeleton. None when the bridge is using a bbox-only detector.
     keypoints: dict[int, tuple[float, float, float]] | None = None
+    # 6/4 r19: stable display id, assigned once per person and carried
+    # across ByteTrack id churn via the inheritance path. The `id` field
+    # mirrors the live ByteTrack id (memory dict key + YOLO coherence).
+    # `stable_id` is what the preview overlay renders so humans can
+    # follow one person across hundreds of YOLO id reassignments.
+    stable_id: int = 0
 
 
 @dataclass(frozen=True)
@@ -150,6 +156,10 @@ class _TrackMemory:
     # pose-based movement source to compute max keypoint displacement.
     # None when the detector is bbox-only or no keypoints were confident.
     keypoints: dict[int, tuple[float, float, float]] | None = None
+    # 6/4 r19: stable display id. Assigned at first allocation and
+    # preserved across ByteTrack id churn — when inheritance moves
+    # memory to a new ByteTrack key, the stable_id rides along.
+    stable_id: int = 0
 
 
 # 6/4 r17: movement source selector. "bbox" is the pre-existing behaviour
@@ -217,6 +227,10 @@ class PersonSceneTracker:
         self.movement_source = movement_source
         self._tracks: dict[int, _TrackMemory] = {}
         self._next_id = 1
+        # 6/4 r19: stable display ids — issued once per person, carried
+        # through ByteTrack id churn. Monotonically increasing so the
+        # operator can recognise "id 3" as the same person 5 minutes later.
+        self._next_stable_id = 1
 
     def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None, movement_source: str | None = None) -> None:
         """Hot-update detector thresholds from the profile poller.
@@ -288,6 +302,15 @@ class PersonSceneTracker:
             else:
                 track_id = self._match_or_allocate(metrics["center_x"], metrics["center_y"], active_ids)
             previous = self._tracks.get(track_id)
+            # 6/4 r19: resolve the stable display id. If we have a previous
+            # memory (either from existing ByteTrack id OR via inheritance
+            # in the block above), we keep its stable_id. Brand-new tracks
+            # get a fresh stable id from the monotonic counter.
+            if previous is not None and previous.stable_id:
+                stable_id = previous.stable_id
+            else:
+                stable_id = self._next_stable_id
+                self._next_stable_id += 1
             if previous is None:
                 movement = 0.0
                 age = 1
@@ -341,6 +364,7 @@ class PersonSceneTracker:
                 age=age,
                 missing=0,
                 keypoints=obs.keypoints,
+                stable_id=stable_id,
             )
             active_ids.add(track_id)
             active_tracks.append(
@@ -357,6 +381,7 @@ class PersonSceneTracker:
                     movement=movement,
                     age=age,
                     keypoints=obs.keypoints,
+                    stable_id=stable_id,
                 )
             )
 
@@ -486,6 +511,7 @@ def quiet_person_scene(scene: PersonScene) -> PersonScene:
                 movement=0.0,
                 age=track.age,
                 keypoints=track.keypoints,
+                stable_id=track.stable_id,
             )
             for track in scene.tracks
         ],
@@ -697,7 +723,13 @@ def annotate_person_scene(
         age_str = ""
         if track_ages is not None and track.id in track_ages:
             age_str = f" a{track_ages[track.id]}"
-        label = f"id {track.id}{age_str} {track.confidence:.2f} d{track.distance:.2f} v{track.movement:.2f}"
+        # 6/4 r19: overlay shows stable_id (persistent across ByteTrack
+        # id churn) — humans can follow "P3" across hundreds of frames
+        # without the label flickering. ByteTrack's raw id still drives
+        # internal memory keys; this is purely cosmetic but makes the
+        # preview infinitely more readable.
+        display_id = f"P{track.stable_id}" if track.stable_id else f"id {track.id}"
+        label = f"{display_id}{age_str} {track.confidence:.2f} d{track.distance:.2f} v{track.movement:.2f}"
         text_box = draw.textbbox((x1, max(0, y1 - 14)), label)
         draw.rectangle(text_box, fill=(0, 0, 0))
         draw.text((x1, max(0, y1 - 14)), label, fill=color)
