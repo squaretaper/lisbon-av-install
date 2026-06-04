@@ -179,14 +179,18 @@ class PersonSceneTracker:
             else:
                 delta = math.hypot(metrics["center_x"] - previous.center_x, metrics["center_y"] - previous.center_y)
                 if delta <= self.stillness_deadband:
-                    metrics = {
-                        "width": previous.width,
-                        "height": previous.height,
-                        "area": previous.area,
-                        "center_x": previous.center_x,
-                        "center_y": previous.center_y,
-                        "distance": previous.distance,
-                    }
+                    # 6/4 r10 (operator: CV7 stopped firing during fast motion):
+                    # Below the deadband, suppress the movement signal so
+                    # detector noise doesn't fire CV7. But DO NOT lock the
+                    # metrics to `previous`. The pre-6/4 code did, which
+                    # meant the next frame's delta was compared against
+                    # the *original* anchor, not the current location.
+                    # Cumulative drift across many small frames was then
+                    # never visible — a person could walk halfway across
+                    # the room one slow step at a time and stay "still"
+                    # forever because each per-frame delta was below
+                    # deadband and the anchor never advanced. Now metrics
+                    # carry through fresh; only `movement` is gated.
                     movement = 0.0
                 else:
                     movement = _clamp01(delta / max(0.03, dt * 0.65))

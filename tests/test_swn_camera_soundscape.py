@@ -123,9 +123,15 @@ def test_person_scene_tracker_deadbands_detector_jitter_for_stationary_people():
         dt=0.25,
     )
 
+    # 6/4 r10: deadband no longer locks position — only gates movement
+    # signal. The new bbox center/distance advance freely each frame so
+    # cumulative drift across many sub-deadband frames is visible. Asserts
+    # updated: movement stays 0 (detector noise gated), but position
+    # tracks the new observation rather than the original anchor.
     assert second.tracks[0].movement == 0.0
-    assert math.isclose(second.tracks[0].center_x, first.tracks[0].center_x, abs_tol=1e-9)
-    assert math.isclose(second.tracks[0].distance, first.tracks[0].distance, abs_tol=1e-9)
+    # Position advances (small bbox shift carried through), not locked
+    assert second.tracks[0].center_x != first.tracks[0].center_x
+    assert math.isclose(second.tracks[0].center_x, 0.377, abs_tol=0.005)
     assert second.activity < 0.05
 
 
