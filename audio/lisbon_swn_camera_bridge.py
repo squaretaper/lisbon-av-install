@@ -815,7 +815,7 @@ class LisbonSwnMapper:
             0.025 + 0.165 * ((centroid_x * 0.65) + (activity * 0.35)),  # browse
             self.max_cv * (0.50 + 0.35 * (0.5 - centroid_y)),  # cv5 transpose (was dispersion 6/3)
             self.max_cv * mix_target,  # CV6 main mix VCA
-            0.0 if motion <= 0.005 else self.max_cv * (_clamp01(motion * 2.6) ** 0.55),  # CV7 glitch trigger (sensitivity tuned 6/3)
+            0.0 if motion < 0.06 else self.max_cv,  # CV7 glitch trigger (6/4 r7: binary fire to max_cv)
             0.035 + 0.190 * activity,  # depth
         ]
         return _slew_targets(targets, current_attr="_current", owner=self, max_cv=self.max_cv, smoothing_hz=self.smoothing_hz, dt=dt, per_channel_smoothing_hz=PER_CV_SMOOTHING_HZ)
@@ -914,18 +914,27 @@ class HumanAwareSwnMapper:
         return float(np.clip(self._presence_state, 0.0, 1.0))
 
     def _movement_gate_target(self, scene: PersonScene) -> float:
+        """CV7 glitch trigger — binary fire to max_cv on real movement, else 0.
+
+        Operator 6/4 r7: 'glitch on cv7 should go to 1 when activated, we're
+        not getting strong audio glitch.' The scaled-magnitude design
+        (gate = (movement*2.6)^0.55 * max_cv) meant subtle movement values
+        produced 30-50% CV — never strong enough to slam the O&C gate
+        and never crossing the 0.40 threshold the lighting sync requires
+        for the direct strobe path.
+
+        New design: threshold + hold. If movement crosses fire_threshold,
+        CV7 = max_cv (full open). Otherwise CV7 = 0. The fast 24 Hz slew
+        on PER_CV_SMOOTHING_HZ[6] handles the ms-scale envelope at the
+        output stage so the gate still rises/falls smoothly enough for
+        the dispersion gate, but the *target* is binary so any qualifying
+        motion sends a full-strength trigger.
+        """
         movement = max(_clamp01(scene.movement), _clamp01(scene.activity))
-        if movement <= 0.005:
+        fire_threshold = 0.06   # below this: noise/breath, no fire
+        if movement < fire_threshold:
             return 0.0
-        # Open the gate with a curved response so small real motion is audible,
-        # but detector noise below the stillness gates remains fully closed.
-        # Tuned (2026-06-03 live test): operator feedback "glitch needs a
-        # touch more sensitivity for movement". Bumped multiplier 1.85 -> 2.6
-        # and softened exponent 0.7 -> 0.55 so a casual walk lands around
-        # 0.4-0.6 of max_cv instead of 0.2-0.3. The max_cv ceiling still
-        # caps the absolute level.
-        gate = _clamp01(movement * 2.6) ** 0.55
-        return float(np.clip(self.max_cv * gate, 0.0, self.max_cv))
+        return float(self.max_cv)
 
     def _browse_target(self, scene: PersonScene, dt: float) -> float:
         """CV4 (BROWSE) — always-on evolving wavetable position.
