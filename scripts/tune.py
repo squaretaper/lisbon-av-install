@@ -44,6 +44,8 @@ ALLOWED_KEYS = {
     "glitch_fire_threshold",
     "browse_rate_min_hz",
     "browse_rate_max_hz",
+    "cv7_hold_ms",
+    "cv7_release_ms",
 }
 
 
