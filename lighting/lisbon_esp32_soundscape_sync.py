@@ -39,6 +39,10 @@ class LightState:
     chase_ms: int | None = None
     pulse_depth: int | None = None
     packet_span: int | None = None
+    # 6/4 r25: pure-white bloom layered on chase + glitch patterns.
+    # 0 = pure red (no change), 127 = ~50% white lift. Sync derives
+    # this from nearest_distance so the room "blooms" as people approach.
+    white_amount: int | None = None
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -263,14 +267,18 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     # broken and pulsing chains. glitch = strobe." Mic transient is NOT
     # a strobe trigger — it's an energy/brightness modulator for chase
     # mode below. Same for the legacy spectrum path; pure CV7 contract.
+    # 6/4 r25: strobe also gets proximity-driven white. Closer person =
+    # more photoflash energy. Capped at 127 (~50%). At full proximity
+    # the strobe reads as a bright pink-white flash.
+    strobe_white = int(round(_clamp((1.0 - near) ** 2 * 127, 0, 127)))
     if glitch_trigger >= 0.40:
-        return LightState(mode="2", brightness=255, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f}")
+        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f} white={strobe_white}")
     # Soundscape-glitch fallback when ES-9 return is silent and CV7
     # didn't quite cross 0.40 but the bridge's composite glitch score
     # says the audio is glitching. Conservative threshold so a steady
     # drone doesn't tickle it.
     if (not audio_present) and soundscape_glitch >= 0.62:
-        return LightState(mode="2", brightness=255, reason=f"soundscape glitch {soundscape_glitch:.2f}")
+        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"soundscape glitch {soundscape_glitch:.2f} white={strobe_white}")
     if audio_present and (freq_hz >= 1400 or high_freq >= 0.28):
         return LightState(mode="1", brightness=max(96, brightness), reason=f"audio high freq chase {freq_hz:.0f}Hz high={high_freq:.2f}")
 
@@ -309,13 +317,23 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     cv6_pulse_depth = int(round(_clamp(40 + 56 * main_mix_vca, 40, 96) / 8.0) * 8)
     if chord_pulse_ms is not None:
         cv6_chase_ms = int(round(0.4 * chord_pulse_ms + 0.6 * cv6_chase_ms))
+    # 6/4 r25: proximity-driven white bloom. `near` is normalized 0..1
+    # where small = close. Invert and square-curve so the bloom builds
+    # gracefully then commits — a person at the doorway barely lifts the
+    # red, a person right under the rig pushes the strip toward warm
+    # white. Cap at 127 (~50% of full white). White only applied in
+    # chase (mode 1) and glitch (mode 2) at the firmware layer.
+    proximity = 1.0 - near
+    white_max = 127  # 50% of full white blend
+    white_amount = int(round(_clamp(proximity * proximity * white_max, 0, white_max)))
     return LightState(
         mode="1",
         brightness=cv6_brightness,
         chase_ms=cv6_chase_ms,
         pulse_depth=cv6_pulse_depth,
         packet_span=cv6_packet_span,
-        reason=f"cv6 chase mix={main_mix_vca:.2f} bright={cv6_brightness} span={cv6_packet_span} speed={cv6_chase_ms}ms" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else "") + (f" mic={mic_energy:.2f}" if mic_active else ""),
+        white_amount=white_amount,
+        reason=f"cv6 chase mix={main_mix_vca:.2f} bright={cv6_brightness} span={cv6_packet_span} speed={cv6_chase_ms}ms white={white_amount}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else "") + (f" mic={mic_energy:.2f}" if mic_active else ""),
     )
 
 
@@ -376,6 +394,15 @@ def commands_for_transition(
             commands.extend(["}"] * span_delta)
         elif span_delta < 0:
             commands.extend(["{"] * abs(span_delta))
+    # 6/4 r25: white bloom — only send when value actually changes since
+    # last state. Multi-char `w<n>;` command, not bounded by the small-
+    # step pacing the other params use (white can jump freely; it's a
+    # post-pass blend, not a parameter the firmware ramps).
+    if target.white_amount is not None:
+        current_white = current.white_amount if (current is not None and current.white_amount is not None) else 0
+        if target.white_amount != current_white:
+            white_val = int(_clamp(target.white_amount, 0, 127))
+            commands.append(f"w{white_val};")
     return commands
 
 
@@ -387,6 +414,7 @@ def state_after_commands(current: LightState | None, commands: Iterable[str], ta
     chase_ms = current.chase_ms if current is not None and current.chase_ms is not None else 96
     pulse_depth = current.pulse_depth if current is not None and current.pulse_depth is not None else 42
     packet_span = current.packet_span if current is not None and current.packet_span is not None else 20
+    white_amount = current.white_amount if current is not None and current.white_amount is not None else 0
     for command in commands:
         if command in {"0", "1", "2", "3", "4", "x"}:
             mode = command
@@ -402,6 +430,11 @@ def state_after_commands(current: LightState | None, commands: Iterable[str], ta
             pulse_depth = int(_clamp(pulse_depth + 8, 8, 112))
         elif command == "[":
             pulse_depth = int(_clamp(pulse_depth - 8, 8, 112))
+        elif command.startswith("w") and command.endswith(";"):
+            try:
+                white_amount = int(_clamp(int(command[1:-1]), 0, 127))
+            except ValueError:
+                pass
         elif command == "}":
             packet_span = int(_clamp(packet_span + 2, 8, 44))
         elif command == "{":
@@ -412,7 +445,8 @@ def state_after_commands(current: LightState | None, commands: Iterable[str], ta
         pulse_depth = current.pulse_depth if current is not None else None
     if target.packet_span is None:
         packet_span = current.packet_span if current is not None else None
-    return LightState(mode=mode, brightness=brightness, chase_ms=chase_ms, pulse_depth=pulse_depth, packet_span=packet_span, reason=target.reason)
+    white_amount = target.white_amount if target.white_amount is not None else (current.white_amount if current is not None else None)
+    return LightState(mode=mode, brightness=brightness, chase_ms=chase_ms, pulse_depth=pulse_depth, packet_span=packet_span, white_amount=white_amount, reason=target.reason)
 
 
 class SerialWriter:
