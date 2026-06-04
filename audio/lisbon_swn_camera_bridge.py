@@ -169,12 +169,24 @@ class _TrackMemory:
 #                   magnitude scales with how far the wrist climbs past the elbow,
 #                   saturating at ~shoulder height. Walking, dancing,
 #                   fast motion all silent; arms up = glitch.
+#   "bbox_raise"  — postural via bbox aspect ratio (height/width). Raising
+#                   arms above the head dramatically increases the bbox
+#                   height relative to width, going from ~1.5 standing to
+#                   ~3.0 with arms up. Works on top-down camera mounts
+#                   where pose keypoints are unreliable (the model is
+#                   trained on standing front-views, not bird's-eye).
 # Wired through PersonSceneTracker.set_tuning so the operator can flip
 # live without a bridge restart.
 MOVEMENT_SOURCE_BBOX = "bbox"
 MOVEMENT_SOURCE_POSE = "pose"
 MOVEMENT_SOURCE_POSE_RAISE = "pose_raise"
-_VALID_MOVEMENT_SOURCES = {MOVEMENT_SOURCE_BBOX, MOVEMENT_SOURCE_POSE, MOVEMENT_SOURCE_POSE_RAISE}
+MOVEMENT_SOURCE_BBOX_RAISE = "bbox_raise"
+_VALID_MOVEMENT_SOURCES = {
+    MOVEMENT_SOURCE_BBOX,
+    MOVEMENT_SOURCE_POSE,
+    MOVEMENT_SOURCE_POSE_RAISE,
+    MOVEMENT_SOURCE_BBOX_RAISE,
+}
 
 # Keypoints we trust for "gesture" motion. Hands, feet, head, and elbows.
 # Skip the torso (shoulders/hips) because they barely translate during a
@@ -274,6 +286,39 @@ def _raise_magnitude(
         if magnitude > best:
             best = magnitude
     return min(1.0, best)
+
+
+# 6/4 r22: bbox aspect ratio thresholds for the bbox_raise source.
+# Standing person bbox aspect (h/w): typically 1.5-2.5 depending on
+# pose. Raising both arms above the head pushes it to 2.8-3.5+ because
+# the bbox extends up to the wrists. We saturate at 3.2 so a clear
+# arms-up reading fires full max_cv; below 2.0 nothing fires; between
+# 2.0 and 3.2 the magnitude scales linearly.
+_BBOX_RAISE_BASELINE = 2.0   # below this = no raise
+_BBOX_RAISE_SATURATION = 3.2  # at or above this = full signal
+
+
+def _bbox_raise_magnitude(width: float, height: float) -> float:
+    """Compute "arms raised" magnitude from bbox aspect ratio.
+
+    Returns (height/width - BASELINE) / (SATURATION - BASELINE),
+    clamped to 0..1. Width = 0 (degenerate bbox) returns 0.
+
+    Why bbox aspect works for top-down installs: the pose model is
+    trained on standing front-views and produces near-random keypoint
+    positions on a bird's-eye foreshortened person. But the bbox
+    itself stays meaningful — extending arms above the head still
+    extends the vertical extent of the visible silhouette, just at
+    a different angle. Aspect ratio is a postural signal that does
+    not depend on per-joint model accuracy.
+    """
+    if width <= 1e-6:
+        return 0.0
+    aspect = height / width
+    if aspect <= _BBOX_RAISE_BASELINE:
+        return 0.0
+    scaled = (aspect - _BBOX_RAISE_BASELINE) / (_BBOX_RAISE_SATURATION - _BBOX_RAISE_BASELINE)
+    return min(1.0, scaled)
 
 
 class PersonSceneTracker:
@@ -377,18 +422,31 @@ class PersonSceneTracker:
             else:
                 stable_id = self._next_stable_id
                 self._next_stable_id += 1
-            # 6/4 r17/r20/r21: movement source is selectable.
-            #   POSE        — velocity (max keypoint delta / dt)  REQUIRES previous frame
-            #   POSE_RAISE  — postural (wrist-above-elbow magnitude)  NO previous needed
-            #   BBOX        — velocity (planar+distance delta / dt)  REQUIRES previous frame
+            # 6/4 r17/r20/r21/r22: movement source is selectable.
+            #   POSE         — velocity (max keypoint delta / dt)  REQUIRES previous frame
+            #   POSE_RAISE   — postural via keypoints (wrist-above-elbow)  NO previous needed
+            #   BBOX_RAISE   — postural via bbox aspect (h/w)  NO previous needed
+            #   BBOX         — velocity (planar+distance delta / dt)  REQUIRES previous frame
             #
-            # POSE_RAISE is special: it's a position signal computed
-            # purely from the current frame's keypoints. ByteTrack id
-            # churn produces frequent first-frame allocations during
-            # motion — if we gate raise on `previous is not None` the
-            # signal vanishes exactly when the operator wants it.
+            # Postural sources compute the signal purely from the current
+            # frame; ByteTrack id churn during motion produces frequent
+            # first-frame allocations that would otherwise mute these.
             if self.movement_source == MOVEMENT_SOURCE_POSE_RAISE and obs.keypoints is not None:
                 raise_mag = _raise_magnitude(obs.keypoints)
+                if raise_mag <= self.stillness_deadband:
+                    movement = 0.0
+                else:
+                    movement = float(raise_mag)
+                age = previous.age + 1 if previous is not None else 1
+            elif self.movement_source == MOVEMENT_SOURCE_BBOX_RAISE:
+                # Compute aspect ratio from RAW pixel bbox (not the
+                # normalized-to-frame metrics["width"]/["height"] which
+                # distort when frame is not square). x2-x1 and y2-y1
+                # are pixel dimensions of the bbox.
+                x1, y1, x2, y2 = obs.bbox_xyxy
+                bbox_w_px = abs(float(x2) - float(x1))
+                bbox_h_px = abs(float(y2) - float(y1))
+                raise_mag = _bbox_raise_magnitude(bbox_w_px, bbox_h_px)
                 if raise_mag <= self.stillness_deadband:
                     movement = 0.0
                 else:
@@ -674,6 +732,20 @@ def observations_from_yolo_result(
         class_id = 0 if cls is None or len(cls) <= i else int(cls[i])
         if class_id != 0 or confidence < min_confidence:
             continue
+        # 6/4 r22: reject whole-frame bboxes. When no person is in the
+        # room the model occasionally hallucinates a "person" that
+        # covers the entire frame — bbox area >= 0.85 of total. Real
+        # persons in a top-down install fill at most ~30% of the frame.
+        # A bbox >0.7 is always a hallucination. Drop it before it
+        # poisons the scene aggregates and triggers phantom CV7 events.
+        if frame_size is not None:
+            fw, fh = frame_size
+            fw = max(1, int(fw))
+            fh = max(1, int(fh))
+            x1, y1, x2, y2 = (float(v) for v in raw_bbox)
+            bbox_area_norm = (abs(x2 - x1) * abs(y2 - y1)) / (fw * fh)
+            if bbox_area_norm >= 0.70:
+                continue
         if ids is None or len(ids) <= i or np.isnan(float(ids[i])):
             track_id = None
         else:

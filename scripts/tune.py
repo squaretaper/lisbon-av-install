@@ -54,7 +54,7 @@ ALLOWED_KEYS = {
 # else is treated as a numeric scalar.
 STRING_KEYS = {"movement_source"}
 STRING_KEY_ALLOWED_VALUES: dict[str, set[str]] = {
-    "movement_source": {"bbox", "pose", "pose_raise"},
+    "movement_source": {"bbox", "pose", "pose_raise", "bbox_raise"},
 }
 
 
