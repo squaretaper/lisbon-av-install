@@ -267,23 +267,21 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     # broken and pulsing chains. glitch = strobe." Mic transient is NOT
     # a strobe trigger — it's an energy/brightness modulator for chase
     # mode below. Same for the legacy spectrum path; pure CV7 contract.
-    # 6/4 r25: strobe also gets proximity-driven white. Closer person =
-    # more photoflash energy. Capped at 127 (~50%). At full proximity
-    # the strobe reads as a bright pink-white flash.
-    # 6/4 r26 fix: gate on people > 0. Empty room reports near=0.0
-    # which the inversion read as max proximity -> full white. Empty
-    # room must stay pure red.
-    strobe_white = int(round(_clamp((1.0 - near) ** 2 * 127, 0, 127))) if people > 0 else 0
+    # 6/5 r3: strobe is PURE RED now. Operator: "glitch mode should be
+    # all red, strobe, full intensity (same as we have now but only red)."
+    # White bloom removed from strobe path; reserved for chase mode where
+    # it carries the proximity signal.
+    strobe_white = 0
     if glitch_trigger >= 0.40:
-        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f} white={strobe_white}")
+        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"cv7 glitch direct strobe {glitch_trigger:.2f} pure red")
     # Soundscape-glitch fallback when ES-9 return is silent and CV7
     # didn't quite cross 0.40 but the bridge's composite glitch score
     # says the audio is glitching. Conservative threshold so a steady
     # drone doesn't tickle it.
     if (not audio_present) and soundscape_glitch >= 0.62:
-        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"soundscape glitch {soundscape_glitch:.2f} white={strobe_white}")
+        return LightState(mode="2", brightness=255, white_amount=strobe_white, reason=f"soundscape glitch {soundscape_glitch:.2f} pure red")
     if audio_present and (freq_hz >= 1400 or high_freq >= 0.28):
-        return LightState(mode="1", brightness=max(96, brightness), reason=f"audio high freq chase {freq_hz:.0f}Hz high={high_freq:.2f}")
+        return LightState(mode="1", brightness=max(96, brightness), white_amount=127, reason=f"audio high freq chase {freq_hz:.0f}Hz high={high_freq:.2f} pure white")
 
     # 6/4 round 4: chase brightness + density + rate driven DIRECTLY by
     # CV6 (main mix VCA). Operator: "brightness and number of pixels in
@@ -320,21 +318,25 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
     cv6_pulse_depth = int(round(_clamp(40 + 56 * main_mix_vca, 40, 96) / 8.0) * 8)
     if chord_pulse_ms is not None:
         cv6_chase_ms = int(round(0.4 * chord_pulse_ms + 0.6 * cv6_chase_ms))
-    # 6/4 r25: proximity-driven white bloom. `near` is normalized 0..1
-    # where small = close. Invert and square-curve so the bloom builds
-    # gracefully then commits — a person at the doorway barely lifts the
-    # red, a person right under the rig pushes the strip toward warm
-    # white. Cap at 127 (~50% of full white). White only applied in
-    # chase (mode 1) and glitch (mode 2) at the firmware layer.
-    # 6/4 r26 fix: gate on people > 0. Empty room reports near=0.0
-    # which the inversion read as max proximity = full white. Empty
-    # room must stay pure red.
+    # 6/5 r3: chase (mode 1) is now ALL WHITE. Operator: "low freq,
+    # mode 1 should be all white. same patterns as we have now, with
+    # intensity relative to nearness of people in the room." The 127
+    # white_amount is the firmware's full-white blend cap, so this
+    # locks the color while the brightness/density/speed CV6 modulation
+    # continues to drive the pattern dynamics. Empty room: brightness
+    # falls back to the CV6 baseline (still warm white, dim) — the
+    # operator did not request gating chase on people>0 the way the
+    # 6/4 r26 red-vs-white logic did, so we keep mode 1 alive at idle
+    # brightness as the room ambient.
+    #
+    # Proximity intensification: layer an additional brightness lift
+    # when people are present, modulated by `near`. Closer = brighter.
+    # Stacked ON TOP of cv6_brightness, then clamped to 240.
+    white_amount = 127
     if people > 0:
         proximity = 1.0 - near
-        white_max = 127  # 50% of full white blend
-        white_amount = int(round(_clamp(proximity * proximity * white_max, 0, white_max)))
-    else:
-        white_amount = 0
+        proximity_lift = int(round(_clamp(proximity * proximity * 96, 0, 96) / 16.0) * 16)
+        cv6_brightness = int(_clamp(cv6_brightness + proximity_lift, 32, 240))
     return LightState(
         mode="1",
         brightness=cv6_brightness,
@@ -342,7 +344,7 @@ def state_from_soundscape_status(status: dict[str, Any]) -> LightState:
         pulse_depth=cv6_pulse_depth,
         packet_span=cv6_packet_span,
         white_amount=white_amount,
-        reason=f"cv6 chase mix={main_mix_vca:.2f} bright={cv6_brightness} span={cv6_packet_span} speed={cv6_chase_ms}ms white={white_amount}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else "") + (f" mic={mic_energy:.2f}" if mic_active else ""),
+        reason=f"cv6 chase mix={main_mix_vca:.2f} bright={cv6_brightness} span={cv6_packet_span} speed={cv6_chase_ms}ms white_locked={white_amount}" + (f" chord_pulse={chord_pulse_ms}ms" if chord_pulse_ms else "") + (f" mic={mic_energy:.2f}" if mic_active else ""),
     )
 
 
