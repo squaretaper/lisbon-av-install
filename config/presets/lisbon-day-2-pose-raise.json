@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "name": "lisbon-day-2-pose-raise",
+    "description": "Day 2 install state, 6/5/2026. Camera mounted at ceiling, ~30deg downward. yolo11s-pose model (n-pose could not see upper-body keypoints at this angle). pose_raise movement source — wrist-above-elbow postural cue. Threshold 0.05 = any visible raise fires. CV7 hold 200ms across momentary keypoint dips. Scene movement = max across tracks so phantom detections do not dilute real gestures.",
+    "captured_at": "2026-06-05",
+    "model": "yolo11s-pose.pt (PR #64)",
+    "movement_source_choice": "pose_raise — direct wrist_y < elbow_y comparison. View-stable at our ceiling-down angle once keypoint quality was fixed by switching from yolo11n to yolo11s.",
+    "supporting_fixes": [
+      "PR #61 centroid-teleport velocity guard",
+      "PR #62 wrist-elevation + EMA infrastructure (knobs available, source not currently used)",
+      "PR #63 mode 1 all white + mode 2 pure red",
+      "PR #64 yolo11s-pose model upgrade",
+      "PR #65 scene.movement = max across tracks"
+    ],
+    "deploy_via": "cp config/presets/lisbon-day-2-pose-raise.json audio/runtime/tune.json",
+    "bridge_runtime_args": "LISBON_CAMERA_HZ=10, LISBON_YOLO_MODEL=yolo11s-pose.pt — see config/launchagents/ai.ganchitecture.lisbon-swn-bridge.plist"
+  },
+  "movement_source": "pose_raise",
+  "glitch_fire_threshold": 0.05,
+  "cv7_hold_ms": 200.0,
+  "cv7_release_ms": 150.0,
+  "browse_rate_min_hz": 0.009,
+  "browse_rate_max_hz": 0.05,
+  "postural_confidence_floor": 0.55,
+  "postural_ema_alpha": 1.0
+}
