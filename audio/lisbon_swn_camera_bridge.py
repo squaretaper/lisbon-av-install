@@ -160,6 +160,13 @@ class _TrackMemory:
     # preserved across ByteTrack id churn — when inheritance moves
     # memory to a new ByteTrack key, the stable_id rides along.
     stable_id: int = 0
+    # 6/5 r2: EMA-smoothed postural magnitude. Single-frame keypoint
+    # noise can spike the raw postural signal momentarily above
+    # threshold even when the person is still. Smoothing across frames
+    # rejects 1-2 frame spikes while preserving genuine multi-frame
+    # raises. Updated lazily — only the elevation/extension postural
+    # branches touch this; bbox/pose-velocity branches leave it at 0.
+    postural_ema: float = 0.0
 
 
 # 6/4 r17: movement source selector.
@@ -185,6 +192,11 @@ MOVEMENT_SOURCE_ARM_EXTENSION = "arm_extension"
 # 6/4 r24: combined "arm extension OR fast pose motion" — max of the
 # two signals so a raised arm OR a fast wave both fire CV7.
 MOVEMENT_SOURCE_EXTENSION_OR_VELOCITY = "extension_or_velocity"
+# 6/5 r2: wrist-elevation postural source; replaces arm_extension as
+# the recommended postural feature for non-top-down camera angles
+# (see _wrist_elevation_magnitude docstring). Combined with velocity
+# the same way extension_or_velocity does, gated by centroid continuity.
+MOVEMENT_SOURCE_ELEVATION_OR_VELOCITY = "elevation_or_velocity"
 _VALID_MOVEMENT_SOURCES = {
     MOVEMENT_SOURCE_BBOX,
     MOVEMENT_SOURCE_POSE,
@@ -192,6 +204,7 @@ _VALID_MOVEMENT_SOURCES = {
     MOVEMENT_SOURCE_BBOX_RAISE,
     MOVEMENT_SOURCE_ARM_EXTENSION,
     MOVEMENT_SOURCE_EXTENSION_OR_VELOCITY,
+    MOVEMENT_SOURCE_ELEVATION_OR_VELOCITY,
 }
 
 # Keypoints we trust for "gesture" motion. Hands, feet, head, and elbows.
@@ -405,6 +418,77 @@ def _arm_extension_magnitude(
     return min(1.0, best / _EXTENSION_SATURATION)
 
 
+# 6/5 r2: wrist-elevation postural source. arm_extension's geometry
+# (wrist→shoulder distance / torso-len ratio) overshoots on
+# foreshortened bodies — at oblique camera angles the torso projects
+# SHORT while hanging arms still project the full forearm distance
+# from shoulders. Result: standing still reads 0.4-0.8 just from
+# anatomy, well above any sane fire threshold.
+#
+# This source uses VERTICAL DISPLACEMENT IN IMAGE COORDS as the signal,
+# which is sign-correct across all camera angles where the camera is
+# above eye level:
+#   - hanging arm: wrist projects BELOW shoulder in image (y > shoulder_y)
+#   - raised arm:  wrist projects ABOVE shoulder in image (y < shoulder_y)
+# We compute (shoulder_y - wrist_y) / torso_vertical_extent, clamped to
+# [0, 1]. Hanging arms yield negative elevation → 0. Raised arms yield
+# positive elevation → fire.
+#
+# Robustness: requires a stricter confidence floor than arm_extension
+# (default 0.55 vs 0.30) because postural false positives kill the
+# install far worse than missed gestures. The threshold is wired
+# through tune.json as `postural_confidence_floor`.
+_WRIST_ELEVATION_DEFAULT_CONF_FLOOR = 0.55
+
+
+def _wrist_elevation_magnitude(
+    keypoints: dict[int, tuple[float, float, float]] | None,
+    confidence_floor: float = _WRIST_ELEVATION_DEFAULT_CONF_FLOOR,
+) -> float:
+    """Vertical wrist-above-shoulder elevation / torso vertical span.
+
+    Returns 0.0 when:
+      - keypoints missing
+      - any required keypoint (both shoulders, both hips, the candidate
+        wrist) below `confidence_floor`
+      - both wrists hang at or below the shoulder line
+      - torso vertical span degenerates (<0.02 frame-units)
+
+    Image-coordinate sign convention: y=0 is the TOP of the frame.
+    A wrist with smaller y is HIGHER in image space, which corresponds
+    to a raised arm at any camera angle where the camera is above the
+    subject's eye line. Saturates at 1.0 when a wrist is one full
+    torso-vertical-span above the shoulder line.
+    """
+    if not keypoints:
+        return 0.0
+    l_shldr = keypoints.get(5)
+    r_shldr = keypoints.get(6)
+    l_hip = keypoints.get(11)
+    r_hip = keypoints.get(12)
+    if not (l_shldr and r_shldr and l_hip and r_hip):
+        return 0.0
+    if (l_shldr[2] < confidence_floor or r_shldr[2] < confidence_floor or
+            l_hip[2] < confidence_floor or r_hip[2] < confidence_floor):
+        return 0.0
+    shldr_mid_y = (l_shldr[1] + r_shldr[1]) * 0.5
+    hip_mid_y = (l_hip[1] + r_hip[1]) * 0.5
+    torso_v = abs(hip_mid_y - shldr_mid_y)
+    if torso_v < 0.02:
+        return 0.0
+    best = 0.0
+    for wrist_idx in (9, 10):
+        wrist = keypoints.get(wrist_idx)
+        if not wrist or wrist[2] < confidence_floor:
+            continue
+        # y increases downward in image coords, so wrist ABOVE shoulder
+        # means shoulder_y - wrist_y > 0.
+        elevation = (shldr_mid_y - wrist[1]) / torso_v
+        if elevation > best:
+            best = elevation
+    return min(1.0, best)
+
+
 class PersonSceneTracker:
     """Stable ID and scene summary layer for person detections.
 
@@ -420,6 +504,17 @@ class PersonSceneTracker:
         if movement_source not in _VALID_MOVEMENT_SOURCES:
             raise ValueError(f"movement_source must be one of {sorted(_VALID_MOVEMENT_SOURCES)}, got {movement_source!r}")
         self.movement_source = movement_source
+        # 6/5 r2: hot-tunable postural knobs.
+        # postural_confidence_floor — min keypoint confidence required
+        # for elevation/extension postural sources to use a keypoint.
+        # Default raised from the legacy 0.30 to 0.55: postural false
+        # positives kill the install far worse than missed gestures.
+        # postural_ema_alpha — weight of the current frame in the
+        # exponential moving average. 1.0 = no smoothing; lower values
+        # introduce latency but reject single-frame keypoint noise.
+        # 0.35 → ~3-frame effective window at 5Hz camera = ~600ms.
+        self.postural_confidence_floor: float = _WRIST_ELEVATION_DEFAULT_CONF_FLOOR
+        self.postural_ema_alpha: float = 0.35
         self._tracks: dict[int, _TrackMemory] = {}
         self._next_id = 1
         # 6/4 r19: stable display ids — issued once per person, carried
@@ -427,7 +522,7 @@ class PersonSceneTracker:
         # operator can recognise "id 3" as the same person 5 minutes later.
         self._next_stable_id = 1
 
-    def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None, movement_source: str | None = None) -> None:
+    def set_tuning(self, *, stillness_deadband: float | None = None, match_threshold: float | None = None, movement_source: str | None = None, postural_confidence_floor: float | None = None, postural_ema_alpha: float | None = None) -> None:
         """Hot-update detector thresholds from the profile poller.
 
         Operator 6/4 r13: source-PR-per-knob was costing ~10s of CV freeze
@@ -455,6 +550,16 @@ class PersonSceneTracker:
             elif new_val != self.movement_source:
                 print(f"[poll-tune] movement_source {self.movement_source!r} -> {new_val!r}", flush=True)
                 self.movement_source = new_val
+        if postural_confidence_floor is not None:
+            new_val = max(0.0, min(1.0, float(postural_confidence_floor)))
+            if abs(new_val - self.postural_confidence_floor) > 1e-6:
+                print(f"[poll-tune] postural_confidence_floor {self.postural_confidence_floor:.3f} -> {new_val:.3f}", flush=True)
+                self.postural_confidence_floor = new_val
+        if postural_ema_alpha is not None:
+            new_val = max(0.05, min(1.0, float(postural_ema_alpha)))
+            if abs(new_val - self.postural_ema_alpha) > 1e-6:
+                print(f"[poll-tune] postural_ema_alpha {self.postural_ema_alpha:.3f} -> {new_val:.3f}", flush=True)
+                self.postural_ema_alpha = new_val
 
     def update(
         self,
@@ -515,6 +620,11 @@ class PersonSceneTracker:
             # Postural sources compute the signal purely from the current
             # frame; ByteTrack id churn during motion produces frequent
             # first-frame allocations that would otherwise mute these.
+            #
+            # 6/5 r2: elevation_or_velocity branch sets this; all other
+            # branches leave it 0 so _TrackMemory.postural_ema stays
+            # bounded and switching modes mid-session is safe.
+            next_postural_ema: float = 0.0
             if self.movement_source == MOVEMENT_SOURCE_POSE_RAISE and obs.keypoints is not None:
                 raise_mag = _raise_magnitude(obs.keypoints)
                 if raise_mag <= self.stillness_deadband:
@@ -571,6 +681,46 @@ class PersonSceneTracker:
                 else:
                     movement = float(combined)
                 age = previous.age + 1 if previous is not None else 1
+            elif self.movement_source == MOVEMENT_SOURCE_ELEVATION_OR_VELOCITY:
+                # 6/5 r2: wrist-elevation (sign-correct postural) OR fast
+                # pose motion. Replaces extension_or_velocity for camera
+                # rigs where the torso is foreshortened — the elevation
+                # feature uses image-y comparison instead of distance
+                # ratios, so it does not over-trigger on standing-still
+                # body geometry. Combined with EMA smoothing (state
+                # carried on _TrackMemory.postural_ema) to reject
+                # single-frame keypoint noise that arm_extension was
+                # vulnerable to.
+                raw_postural = (
+                    _wrist_elevation_magnitude(obs.keypoints, self.postural_confidence_floor)
+                    if obs.keypoints is not None else 0.0
+                )
+                # EMA: smoothed = alpha * raw + (1-alpha) * prev_smoothed.
+                # First frame seeds with the raw value to avoid a slow
+                # ramp from 0 on a person who is already mid-gesture
+                # when the track first appears.
+                alpha = self.postural_ema_alpha
+                if previous is not None:
+                    smoothed_postural = alpha * raw_postural + (1.0 - alpha) * previous.postural_ema
+                else:
+                    smoothed_postural = raw_postural
+                next_postural_ema = float(smoothed_postural)
+                velocity = 0.0
+                if previous is not None and obs.keypoints is not None and previous.keypoints is not None:
+                    centroid_jump = math.hypot(
+                        metrics["center_x"] - previous.center_x,
+                        metrics["center_y"] - previous.center_y,
+                    )
+                    if centroid_jump <= _CENTROID_TELEPORT_THRESHOLD:
+                        delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
+                        if delta > self.stillness_deadband:
+                            velocity = _clamp01(delta / max(0.03, dt * 0.65))
+                combined = max(smoothed_postural, velocity)
+                if combined <= self.stillness_deadband:
+                    movement = 0.0
+                else:
+                    movement = float(combined)
+                age = previous.age + 1 if previous is not None else 1
             elif previous is None:
                 movement = 0.0
                 age = 1
@@ -620,6 +770,7 @@ class PersonSceneTracker:
                 missing=0,
                 keypoints=obs.keypoints,
                 stable_id=stable_id,
+                postural_ema=next_postural_ema,
             )
             active_ids.add(track_id)
             active_tracks.append(
@@ -2150,6 +2301,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 stillness_deadband=tune.get("stillness_deadband"),
                 match_threshold=tune.get("tracker_match_threshold"),
                 movement_source=tune.get("movement_source"),
+                postural_confidence_floor=tune.get("postural_confidence_floor"),
+                postural_ema_alpha=tune.get("postural_ema_alpha"),
             )
         except Exception as exc:
             print(f"[poll] tune tracker error: {exc!r}", flush=True)
