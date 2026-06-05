@@ -92,6 +92,24 @@ SMOOTHING_MAX = 0.65  # was 0.80 — peak still doesn't snap
 # Density input EMA — soaks YOLO bbox jitter so the chord doesn't flicker.
 DENSITY_EMA_HZ = 0.5  # ~320 ms tau
 
+# 6/5 r5: room-silence EMA. Slow timescale (~60s tau) on room RMS from
+# the LisbonAudioProbe. Used to multiply pitch_wander_scale: quiet room
+# narrows the chord drift (piece settles inward), audibly active room
+# widens it (piece becomes more restless in response to restlessness).
+# This is the metaphysical move — the architecture stops keeping time
+# when there is no one to keep it for.
+ROOM_LOUDNESS_EMA_HZ = 1.0 / 60.0  # ~60s tau, slow as ceremony
+# Loudness mapping: RMS in [0, 1] linear scale from the probe. A quiet
+# gallery sits around 0.02-0.05; a busy room with talking sits at 0.1-0.3.
+# We map to a wander multiplier in [SILENT_FACTOR, BUSY_FACTOR]. Silent
+# room widens drift, busy room narrows it. The narrowing on a busy room
+# is intentional — when the audience makes noise, the piece pulls inward,
+# does not compete.
+ROOM_LOUDNESS_FLOOR = 0.02   # below this = pure silence
+ROOM_LOUDNESS_CEIL = 0.15   # above this = saturated busy room
+SILENT_WANDER_FACTOR = 1.6  # silence opens drift wider
+BUSY_WANDER_FACTOR = 0.7    # busy narrows drift, piece refuses to compete
+
 # Profile freshness — bridge's poller cares about mtime; we set this to
 # stamp the profile so the next poll picks us up. Keep TTL > write period
 # so the bridge never sees an "expired" chord.
@@ -122,6 +140,41 @@ def read_scene(status_path: Path) -> tuple[float, dict[str, Any]]:
     # both reinforce each other in a busy room.
     density = clamp(0.65 * count_norm + 0.35 * activity, 0.0, 1.0)
     return density, scene
+
+
+def read_room_loudness(probe_path: Path) -> float:
+    """Return current room RMS from the LisbonAudioProbe status JSON.
+
+    Returns 0.0 if the probe file is missing, stale, malformed, or marks
+    itself not-ok. The probe writes timestamp + last_update_age_ms; if
+    the file hasn't been touched recently the room is unobserved, which
+    is treated as silence for the purposes of widening the wander.
+    """
+    try:
+        data = json.loads(probe_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0.0
+    if not data.get("ok", False):
+        return 0.0
+    rms = data.get("rms")
+    if rms is None:
+        return 0.0
+    return clamp(float(rms), 0.0, 1.0)
+
+
+def loudness_to_wander_factor(loudness: float) -> float:
+    """Map smoothed room loudness to a wander multiplier.
+
+    Below ROOM_LOUDNESS_FLOOR  -> SILENT_WANDER_FACTOR (widen drift)
+    Above ROOM_LOUDNESS_CEIL   -> BUSY_WANDER_FACTOR (narrow drift)
+    Linear between the two endpoints.
+    """
+    if loudness <= ROOM_LOUDNESS_FLOOR:
+        return SILENT_WANDER_FACTOR
+    if loudness >= ROOM_LOUDNESS_CEIL:
+        return BUSY_WANDER_FACTOR
+    t = (loudness - ROOM_LOUDNESS_FLOOR) / (ROOM_LOUDNESS_CEIL - ROOM_LOUDNESS_FLOOR)
+    return lerp(t, SILENT_WANDER_FACTOR, BUSY_WANDER_FACTOR)
 
 
 def read_base_profile(profile_path: Path) -> dict[str, Any]:
@@ -158,10 +211,15 @@ def pick_voicing(density: float, current_voicing: str | None) -> str:
     return VOICING_BANDS[-1][2]
 
 
-def derive_chord(density: float, current_voicing: str | None) -> dict[str, Any]:
+def derive_chord(density: float, current_voicing: str | None, wander_factor: float = 1.0) -> dict[str, Any]:
     voicing = pick_voicing(density, current_voicing)
     root = lerp(density, ROOT_SEMITONES_MIN, ROOT_SEMITONES_MAX)
-    wander = lerp(density, WANDER_MIN, WANDER_MAX)
+    wander = lerp(density, WANDER_MIN, WANDER_MAX) * wander_factor
+    # Hard cap so the multiplied wander cannot drive the SWN voices into
+    # pitches outside the dirge band — wander multiplies AROUND the root,
+    # so a 1.6x multiplier with WANDER_MAX = 0.55 gives 0.88, still well
+    # under the 1.0 hard ceiling the SWN respects.
+    wander = clamp(wander, 0.0, 1.0)
     smoothing = lerp(density, SMOOTHING_MIN, SMOOTHING_MAX)
     return {
         "voicing": voicing,
@@ -190,15 +248,21 @@ def run(
     period_seconds: float,
     log_every: int,
     stop_event: dict[str, bool],
+    room_probe_path: Path | None = None,
 ) -> None:
     density_state = 0.0
+    # 6/5 r5: room loudness EMA state for silence-widens-wander logic.
+    # Initialized at the floor (treat startup as quiet — the piece begins
+    # introverted, the room earns its restlessness).
+    room_loudness_state = ROOM_LOUDNESS_FLOOR
     last_voicing: str | None = None
     last_log = 0.0
     tick = 0
     last_dt_clock = time.monotonic()
     print(
         f"[realtime] driver started. status={status_path.name} "
-        f"profile={profile_path.name} period={period_seconds:.2f}s",
+        f"profile={profile_path.name} period={period_seconds:.2f}s "
+        f"room_probe={room_probe_path.name if room_probe_path else 'none'}",
         flush=True,
     )
     while not stop_event["stop"]:
@@ -215,8 +279,29 @@ def run(
             alpha = 1.0
         density_state = density_state + (density_raw - density_state) * clamp(alpha, 0.0, 1.0)
 
+        # 6/5 r5: slow EMA on room loudness. Separate timescale (~60s)
+        # so the wander breathes with the room over ceremony-time, not
+        # frame-time. When the probe is missing the read returns 0.0
+        # which the EMA pulls toward — silence widens drift, the piece
+        # opens up when nothing is listening.
+        if room_probe_path is not None:
+            loudness_raw = read_room_loudness(room_probe_path)
+            if dt > 0.0:
+                import math
+                room_alpha = 1.0 - math.exp(-ROOM_LOUDNESS_EMA_HZ * dt)
+            else:
+                room_alpha = 1.0
+            room_loudness_state = (
+                room_loudness_state
+                + (loudness_raw - room_loudness_state) * clamp(room_alpha, 0.0, 1.0)
+            )
+            wander_factor = loudness_to_wander_factor(room_loudness_state)
+        else:
+            loudness_raw = 0.0
+            wander_factor = 1.0
+
         base = read_base_profile(profile_path)
-        chord = derive_chord(density_state, last_voicing)
+        chord = derive_chord(density_state, last_voicing, wander_factor=wander_factor)
         if chord["voicing"] != last_voicing:
             print(
                 f"[realtime] voicing change {last_voicing} -> {chord['voicing']} "
@@ -234,6 +319,9 @@ def run(
         merged["realtime_driver"] = {
             "density": round(density_state, 4),
             "density_raw": round(density_raw, 4),
+            "room_loudness": round(room_loudness_state, 4),
+            "room_loudness_raw": round(loudness_raw, 4),
+            "wander_factor": round(wander_factor, 3),
             "ts": datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
@@ -247,7 +335,8 @@ def run(
             print(
                 f"[realtime] tick={tick} density={density_state:.3f} "
                 f"voicing={chord['voicing']} root={chord['root_semitones']:.2f} "
-                f"wander={chord['pitch_wander_scale']:.2f}",
+                f"wander={chord['pitch_wander_scale']:.2f} "
+                f"room_rms={room_loudness_state:.3f} factor={wander_factor:.2f}",
                 flush=True,
             )
             last_log = now
@@ -290,7 +379,18 @@ def main(argv: list[str] | None = None) -> int:
         default=8,
         help="emit a status line every N ticks (default 8 = ~6s at 0.75s period)",
     )
+    parser.add_argument(
+        "--room-probe-path",
+        type=Path,
+        default=Path(__file__).resolve().parent
+        / "runtime"
+        / "room_audio_probe_status.json",
+        help="path to LisbonAudioProbe status JSON for silence-widens-wander logic. Pass empty string to disable.",
+    )
     args = parser.parse_args(argv)
+
+    # Empty string from CLI disables the room probe entirely.
+    room_probe_path = args.room_probe_path if str(args.room_probe_path) else None
 
     stop_event = {"stop": False}
 
@@ -308,6 +408,7 @@ def main(argv: list[str] | None = None) -> int:
             period_seconds=args.period_seconds,
             log_every=args.log_every,
             stop_event=stop_event,
+            room_probe_path=room_probe_path,
         )
     finally:
         print("[realtime] driver stopped", flush=True)
