@@ -44,6 +44,8 @@
     <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>LISBON_YOLO_MODEL</key>
     <string>yolo11s-pose.pt</string>
+    <key>LISBON_CAMERA_HZ</key>
+    <string>10</string>
     <key>LISBON_CAMERA_URL</key>
     <string>http://127.0.0.1:8765/frame.jpg</string>
   </dict>
