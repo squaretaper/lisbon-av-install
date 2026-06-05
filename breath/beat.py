@@ -50,7 +50,7 @@ for b in range(0, bars * 4, 4):
     mix(buf, sub(60.0 / bpm * 4 * 0.95), start + b * spb)   # bass under each bar
 
 m = np.max(np.abs(buf)) or 1.0
-buf = (buf / m * 0.85).astype("float32")
+buf = np.tanh(buf / m * 1.7).astype("float32")  # drive hot + soft-clip = LOUD
 
 lock = open("/tmp/speak8.lock", "w")
 try: fcntl.flock(lock, fcntl.LOCK_EX)             # take the channel for the drop

@@ -99,14 +99,17 @@ DENSITY_EMA_HZ = 0.5  # ~320 ms tau
 # This is the metaphysical move — the architecture stops keeping time
 # when there is no one to keep it for.
 ROOM_LOUDNESS_EMA_HZ = 1.0 / 60.0  # ~60s tau, slow as ceremony
-# Loudness mapping: RMS in [0, 1] linear scale from the probe. A quiet
-# gallery sits around 0.02-0.05; a busy room with talking sits at 0.1-0.3.
+# Loudness mapping: RMS in [0, 1] linear scale from the probe. Calibration
+# captured live 6/5: this gallery's silence floor reads ~0.11 (HVAC + USB
+# mic self-noise, dominant 363Hz). Conversation and footsteps push toward
+# 0.20-0.30. Set FLOOR to the measured floor so an empty room reads as
+# silence regardless of the background hum.
 # We map to a wander multiplier in [SILENT_FACTOR, BUSY_FACTOR]. Silent
 # room widens drift, busy room narrows it. The narrowing on a busy room
 # is intentional — when the audience makes noise, the piece pulls inward,
 # does not compete.
-ROOM_LOUDNESS_FLOOR = 0.02   # below this = pure silence
-ROOM_LOUDNESS_CEIL = 0.15   # above this = saturated busy room
+ROOM_LOUDNESS_FLOOR = 0.11   # below this = silent (gallery-calibrated)
+ROOM_LOUDNESS_CEIL = 0.25   # above this = saturated busy room
 SILENT_WANDER_FACTOR = 1.6  # silence opens drift wider
 BUSY_WANDER_FACTOR = 0.7    # busy narrows drift, piece refuses to compete
 
