@@ -881,7 +881,13 @@ class PersonSceneTracker:
         spread_x = float(np.max(centers_x) - np.min(centers_x)) if len(tracks) > 1 else 0.0
         nearest = float(np.max(distances))
         mean_distance = float(np.average(distances, weights=weights))
-        movement = float(np.average(movements, weights=weights))
+        # 6/5 r4: scene movement is the MAX across tracks, not weighted
+        # average. A single person raising an arm in a room of 3 tracks
+        # (one real, two phantoms with movement=0) should fire CV7. The
+        # legacy weighted-average semantics diluted real gestures by the
+        # phantom count, producing apparent "latency" and "intermittent
+        # fires" that were actually threshold-narrow misses.
+        movement = float(np.max(movements)) if len(movements) > 0 else 0.0
         count_norm = _clamp01(len(tracks) / 4.0)
         activity = _clamp01(movement * (0.86 + 0.10 * spread_x + 0.04 * count_norm))
         return PersonScene(
