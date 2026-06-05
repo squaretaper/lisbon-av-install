@@ -675,6 +675,79 @@ def test_error_status_blackouts():
     assert state == LightState(mode="x", brightness=0, reason="status not ok")
 
 
+def test_chase_mode_is_locked_white_empty_room():
+    """6/5 r3: chase (mode 1) locks white_amount=127 even in empty room."""
+    state = state_from_soundscape_status(status_template())
+    assert state.mode == "1"
+    assert state.white_amount == 127
+
+
+def test_chase_mode_is_locked_white_with_people():
+    """6/5 r3: chase white stays at 127 regardless of proximity; proximity
+    now modulates BRIGHTNESS instead of white blend."""
+    status = status_template(
+        person_scene={
+            "people_count": 1,
+            "count_norm": 0.25,
+            "activity": 0.22,
+            "movement": 0.04,
+            "nearest_distance": 0.20,  # close
+            "spread_x": 0.0,
+        }
+    )
+    state = state_from_soundscape_status(status)
+    assert state.mode == "1"
+    assert state.white_amount == 127
+
+
+def test_chase_proximity_raises_brightness_above_idle():
+    """Close person should brighten mode 1 beyond the CV6 baseline."""
+    far_status = status_template(
+        person_scene={
+            "people_count": 1, "count_norm": 0.25, "activity": 0.0,
+            "movement": 0.0, "nearest_distance": 0.95, "spread_x": 0.0,
+        }
+    )
+    near_status = status_template(
+        person_scene={
+            "people_count": 1, "count_norm": 0.25, "activity": 0.0,
+            "movement": 0.0, "nearest_distance": 0.10, "spread_x": 0.0,
+        }
+    )
+    far = state_from_soundscape_status(far_status)
+    near = state_from_soundscape_status(near_status)
+    assert near.brightness > far.brightness
+
+
+def test_strobe_mode_is_pure_red():
+    """6/5 r3: glitch strobe (mode 2) must be pure red, white=0."""
+    status = status_template(
+        cv={"cv7_glitch_trigger": 0.18, "cv6_main_mix_vca": 0.2},
+        person_scene={
+            "people_count": 1, "count_norm": 0.25, "activity": 0.0,
+            "movement": 0.0, "nearest_distance": 0.10, "spread_x": 0.0,
+        },
+    )
+    state = state_from_soundscape_status(status)
+    assert state.mode == "2"
+    assert state.brightness == 255
+    assert state.white_amount == 0
+
+
+def test_strobe_mode_pure_red_close_proximity_no_white():
+    """Even with someone right under the rig, strobe stays pure red."""
+    status = status_template(
+        cv={"cv7_glitch_trigger": 0.18},
+        person_scene={
+            "people_count": 2, "count_norm": 0.5, "activity": 0.5,
+            "movement": 0.8, "nearest_distance": 0.0, "spread_x": 0.5,
+        },
+    )
+    state = state_from_soundscape_status(status)
+    assert state.mode == "2"
+    assert state.white_amount == 0
+
+
 def test_transition_commands_use_existing_dual_strip_protocol():
     current = LightState(mode="4", brightness=64, reason="old")
     target = LightState(mode="2", brightness=112, reason="new")
