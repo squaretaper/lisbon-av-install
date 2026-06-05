@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+say_queue.jsonl
+voice_queue.jsonl
+*.aiff
+*.log
+set_output
