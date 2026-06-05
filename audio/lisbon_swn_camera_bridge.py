@@ -208,6 +208,16 @@ _GESTURE_KEYPOINTS = {0, 7, 8, 9, 10, 15, 16}  # nose, L/R elbow, L/R wrist, L/R
 # 0.3 catches more ankle frames without admitting hallucinations.
 _KEYPOINT_MIN_CONFIDENCE = 0.3
 
+# 6/5 r1: centroid-teleport guard for velocity computations. When ByteTrack
+# reuses an id across people, or orphan-inheritance carries memory from a
+# different track, the resulting `previous` → current keypoint delta is a
+# cross-identity comparison that fakes a huge velocity and fires CV7 with
+# no real movement. Real walking/jumping at 5Hz keeps centroid jumps below
+# ~0.20 frame-units; observed swap-events in the trace were 0.55-0.59. A
+# threshold of 0.25 cleanly separates them. Postural sources (arm
+# extension, raise) are per-frame and unaffected by this gate.
+_CENTROID_TELEPORT_THRESHOLD = 0.25
+
 
 def _max_keypoint_delta(
     previous: dict[int, tuple[float, float, float]],
@@ -543,9 +553,18 @@ class PersonSceneTracker:
                 )
                 velocity = 0.0
                 if previous is not None and obs.keypoints is not None and previous.keypoints is not None:
-                    delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
-                    if delta > self.stillness_deadband:
-                        velocity = _clamp01(delta / max(0.03, dt * 0.65))
+                    # 6/5 r1: gate velocity on centroid continuity. See
+                    # _CENTROID_TELEPORT_THRESHOLD docstring — without
+                    # this guard, identity swaps in the tracker compute
+                    # spurious keypoint deltas that fire CV7 randomly.
+                    centroid_jump = math.hypot(
+                        metrics["center_x"] - previous.center_x,
+                        metrics["center_y"] - previous.center_y,
+                    )
+                    if centroid_jump <= _CENTROID_TELEPORT_THRESHOLD:
+                        delta = _max_keypoint_delta(previous.keypoints, obs.keypoints)
+                        if delta > self.stillness_deadband:
+                            velocity = _clamp01(delta / max(0.03, dt * 0.65))
                 combined = max(postural, velocity)
                 if combined <= self.stillness_deadband:
                     movement = 0.0
