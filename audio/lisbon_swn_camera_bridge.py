@@ -1222,7 +1222,7 @@ class SceneServer:
             "  html,body{margin:0;background:#0a0a0a;color:#ddd;font-family:ui-monospace,monospace}\n"
             "  #img{position:fixed;inset:0;background:#000}\n"
             "  #img img{width:100%;height:100%;object-fit:contain;display:block}\n"
-            "  #panel{position:fixed;right:8px;top:8px;bottom:8px;width:380px;background:rgba(0,0,0,.78);border:1px solid #333;padding:12px;font-size:11px;overflow-y:auto;line-height:1.55}\n"
+            "  #panel{position:fixed;right:8px;top:8px;bottom:8px;width:380px;background:rgba(0,0,0,.40);border:1px solid #333;padding:12px;font-size:11px;overflow-y:auto;line-height:1.55}\n"
             "  .lbl{color:#777;display:inline-block;width:88px}\n"
             "  .bar{display:inline-block;background:#222;width:130px;height:8px;vertical-align:middle;margin-left:4px}\n"
             "  .bar > i{display:block;height:100%;background:#c0392b}\n"
