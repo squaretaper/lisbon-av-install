@@ -13,6 +13,14 @@
     <string>--args</string>
     <string>--snapshot-path</string>
     <string>/Users/ganchitecture/code/lisbon-av-install/cv/captures/latest.jpg</string>
+    <string>--fps</string>
+    <string>20</string>
+    <string>--stream-preset</string>
+    <string>vga</string>
+    <string>--jpeg-quality</string>
+    <string>0.55</string>
+    <string>--stream-poll-ms</string>
+    <string>8</string>
   </array>
 
   <key>RunAtLoad</key>
