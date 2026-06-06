@@ -46,6 +46,12 @@ try:
             for _ in range(n):
                 i = np.random.randint(0, max(1, len(data) - 300))
                 data[i:i + np.random.randint(40, 220)] = 0.0
+    target_sr = 48000
+    if sr != target_sr:
+        n = int(round(len(data) * target_sr / sr))
+        data = np.interp(np.linspace(0, len(data), n, endpoint=False),
+                         np.arange(len(data)), data).astype("float32")
+        sr = target_sr
     sd.play(data, sr, device=dev, mapping=[ch]); sd.wait()
     try: os.unlink(tmp.name)
     except Exception: pass
