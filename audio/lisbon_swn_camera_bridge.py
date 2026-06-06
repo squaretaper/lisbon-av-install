@@ -1170,15 +1170,11 @@ def annotate_person_scene(
         if track.keypoints:
             _draw_skeleton(draw, track.keypoints, width, height, color, line_w)
 
-    summary = (
-        f"people {scene.people_count}  activity {scene.activity:.2f}  "
-        f"near {scene.nearest_distance:.2f}  spread {scene.spread_x:.2f}"
-    )
-    if chord_label:
-        summary = f"{summary}  chord {chord_label}"
-    bar_w = min(width, max(520, 9 * len(summary)))
-    draw.rectangle((0, 0, bar_w, 22), fill=(0, 0, 0))
-    draw.text((6, 4), summary, fill=(255, 255, 255))
+    # 6/6: removed the top-left "people N activity X near X spread X chord …"
+    # summary bar — Pablo wants the camera image clean. Track bboxes, stable
+    # IDs and the centroid crosshair stay because those are spatial info
+    # operators read off the frame; the summary text is available out-of-band
+    # in /status.json on the scene server.
     centroid = (int(round(scene.centroid_x * width)), int(round(scene.centroid_y * height)))
     draw.line((centroid[0] - 9, centroid[1], centroid[0] + 9, centroid[1]), fill=(255, 255, 255), width=line_w)
     draw.line((centroid[0], centroid[1] - 9, centroid[0], centroid[1] + 9), fill=(255, 255, 255), width=line_w)
