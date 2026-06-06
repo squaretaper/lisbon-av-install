@@ -26,6 +26,9 @@ struct Config {
     var snapshotPath = defaultSnapshotPath
     var snapshotInterval: TimeInterval = 0.5
     var fps: Double = 10.0
+    var streamPreset: String = "vga"   // vga | hd | full — defaults small for relay
+    var jpegQuality: Double = 0.55     // viewer JPEG quality (relay-friendly)
+    var streamPollMs: Int = 8          // MJPEG sender poll interval (ms)
 }
 
 func parseConfig() -> Config {
@@ -71,6 +74,27 @@ func parseConfig() -> Config {
                 exit(64)
             }
             config.fps = parsed
+        case "--stream-preset":
+            let raw = value(after: arg).lowercased()
+            guard ["vga", "hd", "full"].contains(raw) else {
+                fputs("Invalid --stream-preset: \(raw) (use vga|hd|full)\n", stderr)
+                exit(64)
+            }
+            config.streamPreset = raw
+        case "--jpeg-quality":
+            let raw = value(after: arg)
+            guard let parsed = Double(raw), parsed > 0, parsed <= 1.0 else {
+                fputs("Invalid --jpeg-quality: \(raw) (0-1.0)\n", stderr)
+                exit(64)
+            }
+            config.jpegQuality = parsed
+        case "--stream-poll-ms":
+            let raw = value(after: arg)
+            guard let parsed = Int(raw), parsed >= 1, parsed <= 200 else {
+                fputs("Invalid --stream-poll-ms: \(raw) (1-200)\n", stderr)
+                exit(64)
+            }
+            config.streamPollMs = parsed
         case "--help", "-h":
             print("""
             Lisbon Camera Bridge
@@ -81,6 +105,9 @@ func parseConfig() -> Config {
               --snapshot-path PATH      Latest JPEG path, default \(defaultSnapshotPath)
               --snapshot-interval SEC   Snapshot write interval, default 0.5
               --fps N                   Camera/mock encode FPS, default 10
+              --stream-preset P         vga (640x480) | hd (1280x720) | full (native). Default vga
+              --jpeg-quality Q          Viewer JPEG quality 0-1.0, default 0.55
+              --stream-poll-ms MS       MJPEG sender poll interval ms, default 8
 
             Endpoints:
               GET /health
@@ -308,15 +335,19 @@ final class MockFrameSource {
 final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private let store: FrameStore
     private let fps: Double
+    private let preset: String
+    private let jpegQuality: Double
     private let ciContext = CIContext()
     private let queue = DispatchQueue(label: "lisbon.camera.capture-frames")
     private var session: AVCaptureSession?
     private var deviceName = "unknown-camera"
     private var lastEncodeAt = Date.distantPast
 
-    init(store: FrameStore, fps: Double) {
+    init(store: FrameStore, fps: Double, preset: String, jpegQuality: Double) {
         self.store = store
         self.fps = fps
+        self.preset = preset
+        self.jpegQuality = jpegQuality
     }
 
     func startWhenAuthorized() {
@@ -364,7 +395,16 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
 
         do {
             let session = AVCaptureSession()
-            session.sessionPreset = .hd1280x720
+            switch preset {
+            case "vga":
+                session.sessionPreset = .vga640x480
+            case "hd":
+                session.sessionPreset = .hd1280x720
+            case "full":
+                session.sessionPreset = .high
+            default:
+                session.sessionPreset = .vga640x480
+            }
             let input = try AVCaptureDeviceInput(device: device)
             guard session.canAddInput(input) else {
                 store.setError("cannot add camera input for \(device.localizedName)")
@@ -404,32 +444,59 @@ final class CameraCapture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegat
             return
         }
 
-        let width = CVPixelBufferGetWidth(pixelBuffer)
-        let height = CVPixelBufferGetHeight(pixelBuffer)
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let nativeWidth = CVPixelBufferGetWidth(pixelBuffer)
+        let nativeHeight = CVPixelBufferGetHeight(pixelBuffer)
+        var ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+        // Software downscale — AVCaptureSession presets are advisory on USB webcams
+        // (the C200 ignores .vga640x480 and gives us 1920×1080 regardless), so we
+        // resize the CIImage here to guarantee the bandwidth win the viewer needs.
+        let targetWidth: Int
+        switch preset {
+        case "vga":  targetWidth = 640
+        case "hd":   targetWidth = 1280
+        case "full": targetWidth = nativeWidth
+        default:     targetWidth = 640
+        }
+        var outWidth = nativeWidth
+        var outHeight = nativeHeight
+        if targetWidth < nativeWidth, nativeWidth > 0 {
+            let scale = CGFloat(targetWidth) / CGFloat(nativeWidth)
+            ciImage = ciImage.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            outWidth = targetWidth
+            outHeight = Int(round(Double(nativeHeight) * Double(scale)))
+        }
+
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-        let options = [CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): 0.78]
+        let options = [CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String): jpegQuality]
 
         guard let jpeg = ciContext.jpegRepresentation(of: ciImage, colorSpace: colorSpace, options: options) else {
             store.setError("JPEG encoding failed")
             return
         }
 
-        store.update(jpeg: jpeg, width: width, height: height, device: deviceName)
+        store.update(jpeg: jpeg, width: outWidth, height: outHeight, device: deviceName)
     }
 }
 
 final class HTTPServer {
+    // Per-MJPEG-connection counter, boxed in a class so recursive closures share it by reference.
+    fileprivate final class FrameCounterBox {
+        var value: UInt64 = 0
+    }
+
     private let store: FrameStore
     private let mode: String
     private let port: UInt16
+    private let pollMs: Int
     private let queue = DispatchQueue(label: "lisbon.camera.http-server")
     private let listener: NWListener
 
-    init(store: FrameStore, mode: String, port: UInt16) throws {
+    init(store: FrameStore, mode: String, port: UInt16, pollMs: Int = 8) throws {
         self.store = store
         self.mode = mode
         self.port = port
+        self.pollMs = pollMs
         guard let nwPort = NWEndpoint.Port(rawValue: port) else {
             throw NSError(domain: "LisbonCameraBridge", code: 1, userInfo: [NSLocalizedDescriptionKey: "invalid port"])
         }
@@ -566,35 +633,47 @@ final class HTTPServer {
                 connection.cancel()
                 return
             }
-            self?.sendNextMJPEGFrame(connection)
+            // Per-connection state for drop-stale semantics: never send the same frame twice,
+            // always send the NEWEST frame as soon as the previous TCP write completes.
+            // Box is a class so it's reference-shared across the recursive completion handlers.
+            // No locking needed: pumpMJPEG always runs serialized on the http-server queue.
+            let lastSent = FrameCounterBox()
+            self?.pumpMJPEG(connection, lastSent: lastSent)
         })
     }
 
-    private func sendNextMJPEGFrame(_ connection: NWConnection) {
-        queue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self else { return }
-            guard let frame = self.store.snapshot() else {
-                self.sendNextMJPEGFrame(connection)
+    private func pumpMJPEG(_ connection: NWConnection, lastSent: FrameCounterBox) {
+        guard let frame = store.snapshot(), frame.frameCount > lastSent.value else {
+            // No new frame yet — short poll. pollMs is tiny (default 8ms) so the next frame
+            // ships within one camera frame interval instead of the old hard-coded 100ms.
+            queue.asyncAfter(deadline: .now() + .milliseconds(pollMs)) { [weak self] in
+                self?.pumpMJPEG(connection, lastSent: lastSent)
+            }
+            return
+        }
+
+        lastSent.value = frame.frameCount
+
+        var part = Data()
+        part.appendString("--lisbonframe\r\n")
+        part.appendString("Content-Type: image/jpeg\r\n")
+        part.appendString("Content-Length: \(frame.jpeg.count)\r\n")
+        part.appendString("X-Frame-Count: \(frame.frameCount)\r\n")
+        part.appendString("\r\n")
+        part.append(frame.jpeg)
+        part.appendString("\r\n")
+
+        // Backpressure: we only request the next frame AFTER the OS finishes writing this
+        // one to the socket. If the viewer's pipe is slow we naturally drop intermediate
+        // frames (FrameStore only ever keeps the newest), so the viewer always sees live,
+        // never a backlog.
+        connection.send(content: part, completion: .contentProcessed { [weak self] error in
+            guard error == nil else {
+                connection.cancel()
                 return
             }
-
-            var part = Data()
-            part.appendString("--lisbonframe\r\n")
-            part.appendString("Content-Type: image/jpeg\r\n")
-            part.appendString("Content-Length: \(frame.jpeg.count)\r\n")
-            part.appendString("X-Frame-Count: \(frame.frameCount)\r\n")
-            part.appendString("\r\n")
-            part.append(frame.jpeg)
-            part.appendString("\r\n")
-
-            connection.send(content: part, completion: .contentProcessed { [weak self] error in
-                if error != nil {
-                    connection.cancel()
-                    return
-                }
-                self?.sendNextMJPEGFrame(connection)
-            })
-        }
+            self?.pumpMJPEG(connection, lastSent: lastSent)
+        })
     }
 }
 
@@ -605,7 +684,7 @@ let store = FrameStore()
 var retained: [AnyObject] = []
 
 do {
-    let server = try HTTPServer(store: store, mode: mode, port: config.port)
+    let server = try HTTPServer(store: store, mode: mode, port: config.port, pollMs: config.streamPollMs)
     server.start()
     retained.append(server)
 
@@ -618,7 +697,7 @@ do {
         source.start()
         retained.append(source)
     } else {
-        let capture = CameraCapture(store: store, fps: config.fps)
+        let capture = CameraCapture(store: store, fps: config.fps, preset: config.streamPreset, jpegQuality: config.jpegQuality)
         capture.startWhenAuthorized()
         retained.append(capture)
     }
